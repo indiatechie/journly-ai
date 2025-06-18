@@ -6,7 +6,8 @@ const config = {
 
   kit: {
     adapter: adapter({
-      strict: false 
+      fallback: 'index.html',
+      strict: false
     }),
     alias: {
       $lib: 'src/lib'
