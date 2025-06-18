@@ -1,3 +1,2 @@
-// src/routes/+layout.ts
+// src/routes/+page.ts
 export const prerender = false;
-
