@@ -47,9 +47,16 @@ function uint8ArrayToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+function hasExistingVault(): boolean {
+  const prefs = loadPreferences();
+  return Boolean(prefs.encryption.saltBase64);
+}
+
 export function useEncryption() {
   const isUnlocked = useSettingsStore((s) => s.isVaultUnlocked);
-  const isFirstLaunch = useSettingsStore((s) => s.isFirstLaunch);
+
+  // Determine first launch by checking if a vault has been set up
+  const isFirstLaunch = !hasExistingVault();
 
   const setupVault = async (passphrase: string): Promise<boolean> => {
     try {

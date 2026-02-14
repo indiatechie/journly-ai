@@ -2,43 +2,106 @@
  * Hook: useEntry
  *
  * Provides entry CRUD operations to UI components.
- * Bridges Zustand store with the EntryService (to be implemented in Phase 3).
- *
- * Phase 1 — stores entries in Zustand (in-memory).
- * Phase 3 — will be wired to EntryService for encrypted persistence.
+ * Entries are encrypted and persisted to IndexedDB via EntryRepository.
+ * Falls back to in-memory only if vault is locked.
  */
 
+import { useCallback } from 'react';
 import { useEntryStore } from '@application/store/useEntryStore';
+import { useSettingsStore } from '@application/store/useSettingsStore';
 import { createJournalEntry } from '@domain/models/JournalEntry';
 import type { Mood, EntryId } from '@domain/models/JournalEntry';
 import { generateId } from '@shared/utils/idGenerator';
+import { EntryRepository } from '@infrastructure/storage/EntryRepository';
+import { cryptoService } from '@infrastructure/crypto';
+import { storageAdapter } from '@infrastructure/storage';
+
+function getRepository(): EntryRepository {
+  return new EntryRepository(
+    storageAdapter,
+    cryptoService,
+    () => useSettingsStore.getState().cryptoKey,
+  );
+}
 
 export function useEntry() {
   const entries = useEntryStore((s) => s.entries);
-  const addEntry = useEntryStore((s) => s.addEntry);
-  const removeEntry = useEntryStore((s) => s.removeEntry);
   const entryState = useEntryStore((s) => s.entryState);
   const error = useEntryStore((s) => s.error);
 
-  const createEntry = async (title: string, content: string, mood?: Mood) => {
-    const entry = createJournalEntry({
-      id: generateId(),
-      title,
-      content,
-      mood,
-    });
-    addEntry(entry);
-  };
+  const loadEntries = useCallback(async () => {
+    const store = useEntryStore.getState();
+    store.setListState('loading');
+    try {
+      const repo = getRepository();
+      const all = await repo.findAll();
+      store.setEntries(all);
+    } catch (e) {
+      store.setError(e instanceof Error ? e.message : 'Failed to load entries');
+      store.setListState('error');
+    }
+  }, []);
 
-  const deleteEntry = async (id: EntryId) => {
-    removeEntry(id);
-  };
+  const createEntry = useCallback(async (title: string, content: string, mood?: Mood) => {
+    const store = useEntryStore.getState();
+    store.setEntryState('loading');
+    try {
+      const entry = createJournalEntry({
+        id: generateId(),
+        title,
+        content,
+        mood,
+      });
+      const repo = getRepository();
+      await repo.save(entry);
+      store.addEntry(entry);
+    } catch (e) {
+      store.setError(e instanceof Error ? e.message : 'Failed to create entry');
+      store.setEntryState('error');
+    }
+  }, []);
+
+  const updateEntry = useCallback(async (id: EntryId, updates: { title?: string; content?: string; mood?: Mood }) => {
+    const store = useEntryStore.getState();
+    store.setEntryState('loading');
+    try {
+      const repo = getRepository();
+      const existing = await repo.findById(id);
+      if (!existing) throw new Error('Entry not found');
+
+      if (updates.title !== undefined) existing.title = updates.title;
+      if (updates.content !== undefined) existing.content = updates.content;
+      if (updates.mood !== undefined) existing.mood = updates.mood;
+      existing.updatedAt = new Date().toISOString();
+
+      await repo.save(existing);
+      store.updateEntry(existing);
+    } catch (e) {
+      store.setError(e instanceof Error ? e.message : 'Failed to update entry');
+      store.setEntryState('error');
+    }
+  }, []);
+
+  const deleteEntry = useCallback(async (id: EntryId) => {
+    const store = useEntryStore.getState();
+    store.setEntryState('loading');
+    try {
+      const repo = getRepository();
+      await repo.softDelete(id);
+      store.removeEntry(id);
+    } catch (e) {
+      store.setError(e instanceof Error ? e.message : 'Failed to delete entry');
+      store.setEntryState('error');
+    }
+  }, []);
 
   return {
     entries,
     isLoading: entryState === 'loading',
     error,
+    loadEntries,
     createEntry,
+    updateEntry,
     deleteEntry,
   };
 }

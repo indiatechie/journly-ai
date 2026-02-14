@@ -4,8 +4,10 @@
  * This is the main landing page of the app.
  */
 
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useEntry } from '@presentation/hooks/useEntry';
+import { useSettingsStore } from '@application/store/useSettingsStore';
 
 const MOOD_EMOJI: Record<string, string> = {
   great: '😊',
@@ -16,7 +18,14 @@ const MOOD_EMOJI: Record<string, string> = {
 };
 
 export function JournalPage() {
-  const { entries, deleteEntry } = useEntry();
+  const { entries, deleteEntry, loadEntries } = useEntry();
+  const isVaultUnlocked = useSettingsStore((s) => s.isVaultUnlocked);
+
+  useEffect(() => {
+    if (isVaultUnlocked) {
+      void loadEntries();
+    }
+  }, [isVaultUnlocked, loadEntries]);
 
   // Only show non-deleted entries, sorted newest first
   const visibleEntries = entries
