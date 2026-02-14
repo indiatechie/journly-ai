@@ -4,7 +4,8 @@
  * Sets up React Router with the {@link AppLayout} shell and all page routes.
  */
 
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { AppLayout } from '@presentation/layouts/AppLayout';
 import { VaultGate } from '@presentation/components/common/VaultGate';
 import {
@@ -14,9 +15,11 @@ import {
   SettingsPage,
 } from '@presentation/pages';
 
+const Router = Capacitor.isNativePlatform() ? HashRouter : BrowserRouter;
+
 export function App() {
   return (
-    <BrowserRouter>
+    <Router>
       <VaultGate>
         <Routes>
           <Route element={<AppLayout />}>
@@ -28,6 +31,6 @@ export function App() {
           </Route>
         </Routes>
       </VaultGate>
-    </BrowserRouter>
+    </Router>
   );
 }

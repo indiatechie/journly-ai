@@ -38,3 +38,7 @@ coverage/
 
 # PWA dev artifacts
 dev-dist/
+
+# Capacitor native projects
+android/
+ios/
