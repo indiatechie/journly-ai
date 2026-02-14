@@ -9,8 +9,8 @@
 import { useCallback } from 'react';
 import { useEntryStore } from '@application/store/useEntryStore';
 import { useSettingsStore } from '@application/store/useSettingsStore';
-import { createJournalEntry } from '@domain/models/JournalEntry';
-import type { Mood, EntryId } from '@domain/models/JournalEntry';
+import { createJournalEntry, countWords } from '@domain/models/JournalEntry';
+import type { Mood, EntryId, JournalEntry } from '@domain/models/JournalEntry';
 import { generateId } from '@shared/utils/idGenerator';
 import { EntryRepository } from '@infrastructure/storage/EntryRepository';
 import { cryptoService } from '@infrastructure/crypto';
@@ -42,7 +42,12 @@ export function useEntry() {
     }
   }, []);
 
-  const createEntry = useCallback(async (title: string, content: string, mood?: Mood) => {
+  const getEntryById = useCallback(async (id: EntryId): Promise<JournalEntry | undefined> => {
+    const repo = getRepository();
+    return repo.findById(id);
+  }, []);
+
+  const createEntry = useCallback(async (title: string, content: string, mood?: Mood, tags?: string[]) => {
     const store = useEntryStore.getState();
     store.setEntryState('loading');
     try {
@@ -51,6 +56,7 @@ export function useEntry() {
         title,
         content,
         mood,
+        tags,
       });
       const repo = getRepository();
       await repo.save(entry);
@@ -61,7 +67,7 @@ export function useEntry() {
     }
   }, []);
 
-  const updateEntry = useCallback(async (id: EntryId, updates: { title?: string; content?: string; mood?: Mood }) => {
+  const updateEntry = useCallback(async (id: EntryId, updates: { title?: string; content?: string; mood?: Mood; tags?: string[] }) => {
     const store = useEntryStore.getState();
     store.setEntryState('loading');
     try {
@@ -70,8 +76,12 @@ export function useEntry() {
       if (!existing) throw new Error('Entry not found');
 
       if (updates.title !== undefined) existing.title = updates.title;
-      if (updates.content !== undefined) existing.content = updates.content;
+      if (updates.content !== undefined) {
+        existing.content = updates.content;
+        existing.wordCount = countWords(updates.content);
+      }
       if (updates.mood !== undefined) existing.mood = updates.mood;
+      if (updates.tags !== undefined) existing.tags = updates.tags;
       existing.updatedAt = new Date().toISOString();
 
       await repo.save(existing);
@@ -100,6 +110,7 @@ export function useEntry() {
     isLoading: entryState === 'loading',
     error,
     loadEntries,
+    getEntryById,
     createEntry,
     updateEntry,
     deleteEntry,

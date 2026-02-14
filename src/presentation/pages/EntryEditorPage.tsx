@@ -2,8 +2,8 @@
  * Entry editor page — create or edit a journal entry.
  */
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useEntry } from '@presentation/hooks/useEntry';
 import type { Mood } from '@domain/models/JournalEntry';
 
@@ -17,26 +17,86 @@ const MOOD_OPTIONS: { emoji: string; value: Mood }[] = [
 
 export function EntryEditorPage() {
   const navigate = useNavigate();
-  const { createEntry } = useEntry();
+  const { id } = useParams<{ id: string }>();
+  const { createEntry, updateEntry, getEntryById } = useEntry();
+
+  const isEditMode = Boolean(id) && id !== 'new';
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [mood, setMood] = useState<Mood | undefined>(undefined);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingEntry, setIsLoadingEntry] = useState(false);
 
-  const canSave = content.trim().length > 0 && !isSaving;
+  // Load existing entry in edit mode
+  useEffect(() => {
+    if (!isEditMode || !id) return;
+    let cancelled = false;
+    setIsLoadingEntry(true);
+    getEntryById(id).then((entry) => {
+      if (cancelled || !entry) return;
+      setTitle(entry.title);
+      setContent(entry.content);
+      setMood(entry.mood);
+      setTags(entry.tags);
+      setIsLoadingEntry(false);
+    }).catch(() => {
+      if (!cancelled) setIsLoadingEntry(false);
+    });
+    return () => { cancelled = true; };
+  }, [id, isEditMode, getEntryById]);
+
+  const canSave = content.trim().length > 0 && !isSaving && !isLoadingEntry;
 
   const handleSave = async () => {
     if (!canSave) return;
     setIsSaving(true);
     try {
-      await createEntry(title.trim() || 'Untitled', content, mood);
+      if (isEditMode && id) {
+        await updateEntry(id, {
+          title: title.trim() || 'Untitled',
+          content,
+          mood,
+          tags,
+        });
+      } else {
+        await createEntry(title.trim() || 'Untitled', content, mood, tags);
+      }
       navigate(-1);
     } catch (err) {
       console.error('[EntryEditorPage] Save failed:', err);
       setIsSaving(false);
     }
   };
+
+  const handleAddTag = () => {
+    const tag = tagInput.trim().toLowerCase();
+    if (tag && !tags.includes(tag)) {
+      setTags([...tags, tag]);
+    }
+    setTagInput('');
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    setTags(tags.filter((t) => t !== tag));
+  };
+
+  const handleTagKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag();
+    }
+  };
+
+  if (isLoadingEntry) {
+    return (
+      <div className="p-4 max-w-2xl mx-auto flex items-center justify-center py-20">
+        <p className="text-slate-400">Loading entry...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
@@ -48,6 +108,9 @@ export function EntryEditorPage() {
         >
           ← Back
         </button>
+        <h2 className="text-lg font-semibold text-slate-200">
+          {isEditMode ? 'Edit Entry' : 'New Entry'}
+        </h2>
         <button
           disabled={!canSave}
           onClick={handleSave}
@@ -96,6 +159,44 @@ export function EntryEditorPage() {
               {emoji}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Tags */}
+      <div className="mt-4">
+        <p className="text-sm text-slate-400 mb-2">Tags</p>
+        <div className="flex flex-wrap gap-2 mb-2">
+          {tags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary/15 text-primary text-xs rounded-full"
+            >
+              {tag}
+              <button
+                onClick={() => handleRemoveTag(tag)}
+                className="hover:text-danger transition-colors ml-0.5"
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={handleTagKeyDown}
+            placeholder="Add a tag..."
+            className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm text-slate-200 placeholder:text-slate-600 outline-none focus:border-primary transition-colors"
+          />
+          <button
+            onClick={handleAddTag}
+            disabled={!tagInput.trim()}
+            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Add
+          </button>
         </div>
       </div>
     </div>
