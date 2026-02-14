@@ -20,6 +20,8 @@ export interface EncryptionConfig {
   keyDerivation: 'PBKDF2'; // Fixed for MVP
   iterations: number; // Default: 600_000
   saltBase64?: string; // Stored in IDB, NOT the key
+  testCiphertextBase64?: string; // Encrypted sentinel for passphrase verification
+  testIvBase64?: string; // IV for the sentinel
 }
 
 export type AIProviderType = 'none' | 'local' | 'remote';
