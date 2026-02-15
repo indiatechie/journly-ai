@@ -1,6 +1,5 @@
 /**
- * VaultGate — prompts user to set up or unlock the vault.
- * Wraps app content; children only render when vault is unlocked.
+ * VaultGate — warm, welcoming vault setup and unlock screen.
  */
 
 import { useState } from 'react';
@@ -49,9 +48,8 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
     <div className="flex flex-col items-center justify-center min-h-dvh bg-slate-950 text-slate-100 p-6">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-1">
-            <span className="text-primary">Journly</span>
-            <span className="text-slate-400">.ai</span>
+          <h1 className="text-3xl font-bold mb-2 text-slate-100">
+            {isFirstLaunch ? 'Journly' : 'Welcome back'}
           </h1>
           <p className="text-slate-400 text-sm">
             {isFirstLaunch
@@ -67,7 +65,7 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
             onChange={(e) => setPassphrase(e.target.value)}
             placeholder="Passphrase"
             autoFocus
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-slate-200 placeholder:text-slate-500 outline-none focus:border-primary transition-colors"
+            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-slate-200 placeholder:text-slate-400 outline-none focus:border-primary transition-colors"
           />
 
           {isFirstLaunch && (
@@ -76,7 +74,7 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
               value={confirmPassphrase}
               onChange={(e) => setConfirmPassphrase(e.target.value)}
               placeholder="Confirm passphrase"
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-slate-200 placeholder:text-slate-500 outline-none focus:border-primary transition-colors"
+              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-slate-200 placeholder:text-slate-400 outline-none focus:border-primary transition-colors"
             />
           )}
 
@@ -87,7 +85,7 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
           <button
             type="submit"
             disabled={isLoading || passphrase.length === 0}
-            className="w-full bg-primary hover:bg-primary-hover text-white rounded-lg px-4 py-3 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-primary hover:bg-primary-hover text-slate-950 rounded-lg px-4 py-3 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading
               ? 'Please wait...'
@@ -97,8 +95,8 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
           </button>
         </form>
 
-        <p className="text-slate-500 text-xs text-center mt-6">
-          All data is encrypted locally on your device.
+        <p className="text-slate-400 text-xs text-center mt-6">
+          Everything here is private and encrypted.
           {isFirstLaunch && ' Remember your passphrase — it cannot be recovered.'}
         </p>
       </div>

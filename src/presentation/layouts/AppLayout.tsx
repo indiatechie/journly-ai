@@ -1,30 +1,19 @@
 /**
  * Root application layout.
  *
- * Mobile-first shell with bottom navigation bar and a content area.
- * All pages render inside the <Outlet />.
+ * Mobile-first shell with minimal header, bottom SVG nav, warm tones.
  */
 
 import { Outlet, NavLink } from 'react-router-dom';
 import { useEncryption } from '@presentation/hooks/useEncryption';
-
-const NAV_ITEMS = [
-  { to: '/', label: 'Thoughts', icon: '📓' },
-  { to: '/story', label: 'Stories', icon: '✨' },
-  { to: '/settings', label: 'Settings', icon: '⚙️' },
-] as const;
 
 export function AppLayout() {
   const { lockVault } = useEncryption();
 
   return (
     <div className="flex flex-col h-dvh bg-slate-950 text-slate-100">
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800">
-        <h1 className="text-lg font-bold tracking-tight">
-          <span className="text-primary">Journly</span>
-          <span className="text-slate-400">.ai</span>
-        </h1>
+      {/* Minimal header — just lock button */}
+      <header className="flex items-center justify-end px-4 py-2">
         <button
           onClick={lockVault}
           className="text-slate-400 hover:text-slate-200 transition-colors p-1.5"
@@ -43,25 +32,57 @@ export function AppLayout() {
         <Outlet />
       </main>
 
-      {/* Bottom navigation — mobile-first */}
-      <nav className="flex items-center justify-around bg-slate-900 border-t border-slate-800 pb-[env(safe-area-inset-bottom)]">
-        {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === '/'}
-            className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 px-4 py-2 text-xs transition-colors ${
-                isActive
-                  ? 'text-primary font-semibold'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`
-            }
-          >
-            <span className="text-xl">{item.icon}</span>
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
+      {/* Bottom navigation — warm SVG icons */}
+      <nav className="flex items-center justify-around border-t border-slate-800 pb-[env(safe-area-inset-bottom)]">
+        <NavLink
+          to="/"
+          end
+          className={({ isActive }) =>
+            `flex flex-col items-center gap-0.5 px-4 py-2.5 text-xs transition-colors ${
+              isActive
+                ? 'text-primary font-semibold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`
+          }
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
+          </svg>
+          <span>Journal</span>
+        </NavLink>
+
+        <NavLink
+          to="/story"
+          className={({ isActive }) =>
+            `flex flex-col items-center gap-0.5 px-4 py-2.5 text-xs transition-colors ${
+              isActive
+                ? 'text-primary font-semibold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`
+          }
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+          </svg>
+          <span>Stories</span>
+        </NavLink>
+
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            `flex flex-col items-center gap-0.5 px-4 py-2.5 text-xs transition-colors ${
+              isActive
+                ? 'text-primary font-semibold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`
+          }
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          <span>Settings</span>
+        </NavLink>
       </nav>
     </div>
   );

@@ -8,6 +8,7 @@ import { useEncryption } from '@presentation/hooks/useEncryption';
 import { useSettingsStore } from '@application/store/useSettingsStore';
 import { storageAdapter } from '@infrastructure/storage';
 import { ConfirmDialog } from '@presentation/components/common/ConfirmDialog';
+import { GoogleDriveSync } from '@presentation/components/sync/GoogleDriveSync';
 import type { Theme } from '@domain/models/UserPreferences';
 
 const THEMES: { label: string; value: Theme }[] = [
@@ -161,6 +162,14 @@ export function SettingsPage() {
             No AI provider configured. Coming soon — local models via WebLLM
             or your own OpenAI-compatible endpoint.
           </p>
+        </section>
+
+        {/* Cloud Sync */}
+        <section className="bg-slate-900 rounded-xl p-4 border border-slate-800">
+          <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
+            Cloud Sync
+          </h3>
+          <GoogleDriveSync />
         </section>
 
         {/* Data */}
