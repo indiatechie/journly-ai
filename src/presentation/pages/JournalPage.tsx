@@ -2,7 +2,7 @@
  * Journal page — warm, inviting daily journal experience.
  */
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useEntry } from '@presentation/hooks/useEntry';
 import { useSettingsStore } from '@application/store/useSettingsStore';
@@ -11,6 +11,7 @@ import { getDailyPrompt, getRandomPrompt, getActivePack, setActivePack, BUILT_IN
 import type { EntryId } from '@domain/models/JournalEntry';
 
 const FIRST_RUN_KEY = 'journly-first-run-complete';
+const PACK_DISCOVERED_KEY = 'journly-pack-discovered';
 
 const MOOD_EMOJI: Record<string, string> = {
   great: '😊',
@@ -86,6 +87,11 @@ export function JournalPage() {
   const [activePack, setActivePackState] = useState(getActivePack);
   const [prompt, setPrompt] = useState(getDailyPrompt);
   const [showPackPicker, setShowPackPicker] = useState(false);
+  const [packDiscovered, setPackDiscovered] = useState(
+    () => !!localStorage.getItem(PACK_DISCOVERED_KEY),
+  );
+  const [showPackNudge, setShowPackNudge] = useState(false);
+  const refreshCountRef = useRef(0);
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem(FIRST_RUN_KEY),
   );
@@ -114,34 +120,62 @@ export function JournalPage() {
   const activeEntries = entries.filter((e) => !e.isDeleted);
   const streak = useMemo(() => calculateStreak(entries), [entries]);
 
-  // Onboarding — warm welcome for first-time users
+  // Onboarding — ask what brings them here, pick a pack, start writing
   if (showOnboarding && activeEntries.length === 0) {
+    const handlePickPack = (packId: string) => {
+      setActivePack(packId);
+      const pack = BUILT_IN_PACKS.find((p) => p.id === packId)!;
+      setActivePackState(pack);
+      localStorage.setItem(PACK_DISCOVERED_KEY, '1');
+      setPackDiscovered(true);
+      localStorage.setItem(FIRST_RUN_KEY, '1');
+      setShowOnboarding(false);
+      // Get a prompt from the chosen pack
+      const now = new Date();
+      const start = new Date(now.getFullYear(), 0, 0);
+      const dayOfYear = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      const firstPrompt = pack.prompts[dayOfYear % pack.prompts.length]!;
+      navigate(`/entry/new?focus=1&prompt=${encodeURIComponent(firstPrompt)}`);
+    };
+
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70dvh] px-6 text-center">
-        <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-slate-100 max-w-md">
-          What's on your mind right now?
+      <div className="flex flex-col items-center min-h-[70dvh] px-5 pt-12 pb-8">
+        <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-slate-100 max-w-md text-center">
+          What brings you here?
         </h2>
-        <p className="text-slate-400 text-sm mb-8 max-w-sm">
-          No rules. No format. Just a quiet space for your thoughts.
+        <p className="text-slate-400 text-sm mb-8 max-w-sm text-center">
+          Pick a theme to get started. You can always change it later.
         </p>
+
+        <div className="w-full max-w-sm flex flex-col gap-2.5">
+          {BUILT_IN_PACKS.map((pack) => (
+            <button
+              key={pack.id}
+              onClick={() => handlePickPack(pack.id)}
+              className="flex items-center gap-3 p-4 rounded-xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-primary/40 transition-all text-left group"
+            >
+              <span className="text-2xl">{pack.icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-100 group-hover:text-primary transition-colors">
+                  {pack.name}
+                </p>
+                <p className="text-xs text-slate-400 mt-0.5">{pack.description}</p>
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-700 group-hover:text-primary transition-colors shrink-0">
+                <path d="m9 18 6-6-6-6"/>
+              </svg>
+            </button>
+          ))}
+        </div>
+
         <button
           onClick={() => {
             localStorage.setItem(FIRST_RUN_KEY, '1');
             setShowOnboarding(false);
-            navigate('/entry/new?focus=1');
           }}
-          className="bg-primary hover:bg-primary-hover text-slate-950 rounded-lg px-8 py-3 font-medium transition-colors"
+          className="text-slate-400 hover:text-slate-200 text-sm mt-6 transition-colors"
         >
-          Start writing
-        </button>
-        <button
-          onClick={() => {
-            localStorage.setItem(FIRST_RUN_KEY, '1');
-            setShowOnboarding(false);
-          }}
-          className="text-slate-400 hover:text-slate-200 text-sm mt-4 transition-colors"
-        >
-          I'll look around first
+          I'll just start writing
         </button>
       </div>
     );
@@ -190,37 +224,75 @@ export function JournalPage() {
         <p className="text-sm text-slate-400 mt-0.5">{getFormattedDate()}</p>
       </div>
 
-      {/* Active pack label */}
-      <button
-        onClick={() => setShowPackPicker(true)}
-        className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-primary transition-colors mb-2 px-1"
-      >
-        <span>{activePack.icon}</span>
-        <span>{activePack.name}</span>
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="m6 9 6 6 6-6"/>
-        </svg>
-      </button>
-
       {/* Daily prompt card */}
       <div className="bg-slate-900/60 rounded-2xl p-5 mb-5">
+        {/* Pack chip — inside the card for context */}
+        <div className="flex items-center justify-between mb-3">
+          <button
+            onClick={() => {
+              if (!packDiscovered) {
+                localStorage.setItem(PACK_DISCOVERED_KEY, '1');
+                setPackDiscovered(true);
+              }
+              setShowPackNudge(false);
+              setShowPackPicker(true);
+            }}
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-slate-700 hover:border-primary/50 hover:bg-primary/10 text-sm text-slate-300 hover:text-primary transition-all ${
+              !packDiscovered ? 'pack-chip-intro' : ''
+            }`}
+          >
+            <span>{activePack.icon}</span>
+            <span>{activePack.name}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
+              <path d="m6 9 6 6 6-6"/>
+            </svg>
+          </button>
+        </div>
+
         <div className="flex items-start justify-between gap-3">
           <p className="text-slate-200 text-lg leading-relaxed italic flex-1">
             "{prompt}"
           </p>
-          <button
-            onClick={() => setPrompt(getRandomPrompt())}
-            className="text-slate-400 hover:text-primary transition-colors shrink-0 mt-1"
-            title="Different prompt"
-            aria-label="Refresh prompt"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-              <path d="M3 3v5h5"/>
-              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
-              <path d="M16 16h5v5"/>
-            </svg>
-          </button>
+          <div className="relative shrink-0">
+            <button
+              onClick={() => {
+                setPrompt(getRandomPrompt());
+                refreshCountRef.current += 1;
+                if (refreshCountRef.current >= 3 && !packDiscovered && !showPackNudge) {
+                  setShowPackNudge(true);
+                }
+              }}
+              className="text-slate-400 hover:text-primary transition-colors mt-1"
+              title="Different prompt"
+              aria-label="Refresh prompt"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                <path d="M16 16h5v5"/>
+              </svg>
+            </button>
+            {/* Nudge tooltip after 3+ refreshes */}
+            {showPackNudge && (
+              <div className="tooltip-fade-in absolute right-0 top-8 w-44 bg-slate-800 border border-slate-700 rounded-lg p-2.5 shadow-xl z-10">
+                <p className="text-xs text-slate-200 leading-relaxed">
+                  Want different themes?
+                </p>
+                <button
+                  onClick={() => {
+                    setShowPackNudge(false);
+                    localStorage.setItem(PACK_DISCOVERED_KEY, '1');
+                    setPackDiscovered(true);
+                    setShowPackPicker(true);
+                  }}
+                  className="text-xs text-primary hover:text-primary-hover font-medium mt-1 transition-colors"
+                >
+                  Try a different pack
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         <button
           onClick={() => navigate(`/entry/new?focus=1&prompt=${encodeURIComponent(prompt)}`)}
@@ -320,7 +392,7 @@ export function JournalPage() {
         >
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div
-            className="relative w-full max-w-lg bg-slate-900 rounded-t-2xl p-5 pb-8 max-h-[70dvh] overflow-y-auto"
+            className="relative w-full max-w-lg bg-slate-900 rounded-t-2xl p-5 pb-8 max-h-[70dvh] overflow-y-auto sheet-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
@@ -341,6 +413,10 @@ export function JournalPage() {
                   onClick={() => {
                     setActivePack(pack.id);
                     setActivePackState(pack);
+                    if (!packDiscovered) {
+                      localStorage.setItem(PACK_DISCOVERED_KEY, '1');
+                      setPackDiscovered(true);
+                    }
                     setPrompt((() => {
                       const now = new Date();
                       const start = new Date(now.getFullYear(), 0, 0);
