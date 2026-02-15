@@ -4,11 +4,14 @@
  * This is the main landing page of the app.
  */
 
-import { useEffect, useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEntry } from '@presentation/hooks/useEntry';
 import { useSettingsStore } from '@application/store/useSettingsStore';
-import type { Mood } from '@domain/models/JournalEntry';
+import { ConfirmDialog } from '@presentation/components/common/ConfirmDialog';
+import type { Mood, EntryId } from '@domain/models/JournalEntry';
+
+const FIRST_RUN_KEY = 'journly-first-run-complete';
 
 const MOOD_EMOJI: Record<string, string> = {
   great: '😊',
@@ -29,15 +32,68 @@ const MOOD_FILTERS: { emoji: string; value: Mood }[] = [
 export function JournalPage() {
   const { entries, deleteEntry, loadEntries } = useEntry();
   const isVaultUnlocked = useSettingsStore((s) => s.isVaultUnlocked);
+  const navigate = useNavigate();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [moodFilter, setMoodFilter] = useState<Mood | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(
+    () => !localStorage.getItem(FIRST_RUN_KEY),
+  );
+  const [showWelcomeBanner, setShowWelcomeBanner] = useState(() => {
+    if (sessionStorage.getItem('journly-show-welcome')) {
+      sessionStorage.removeItem('journly-show-welcome');
+      return true;
+    }
+    return false;
+  });
+  const [deleteTarget, setDeleteTarget] = useState<EntryId | null>(null);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (deleteTarget) {
+      await deleteEntry(deleteTarget);
+      setDeleteTarget(null);
+    }
+  }, [deleteTarget, deleteEntry]);
 
   useEffect(() => {
     if (isVaultUnlocked) {
       void loadEntries();
     }
   }, [isVaultUnlocked, loadEntries]);
+
+  // Show onboarding only when: no entries exist AND user hasn't dismissed it before
+  const activeEntries = entries.filter((e) => !e.isDeleted);
+  if (showOnboarding && activeEntries.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70dvh] px-6 text-center">
+        <h2 className="text-2xl sm:text-3xl font-bold mb-3 max-w-md">
+          What's taking up space in your head right now?
+        </h2>
+        <p className="text-slate-400 text-sm mb-8 max-w-sm">
+          No rules. No format. Just dump whatever's on your mind.
+        </p>
+        <button
+          onClick={() => {
+            localStorage.setItem(FIRST_RUN_KEY, '1');
+            setShowOnboarding(false);
+            navigate('/entry/new?focus=1');
+          }}
+          className="bg-primary hover:bg-primary-hover text-white rounded-lg px-8 py-3 font-medium transition-colors"
+        >
+          Start writing
+        </button>
+        <button
+          onClick={() => {
+            localStorage.setItem(FIRST_RUN_KEY, '1');
+            setShowOnboarding(false);
+          }}
+          className="text-slate-500 hover:text-slate-300 text-sm mt-4 transition-colors"
+        >
+          Skip, I'll look around first
+        </button>
+      </div>
+    );
+  }
 
   // Filter and sort entries
   const visibleEntries = useMemo(() => {
@@ -57,17 +113,49 @@ export function JournalPage() {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [entries, searchQuery, moodFilter]);
 
+  // Post-first-write view: show what they wrote + one clear next step
+  if (showWelcomeBanner && activeEntries.length > 0) {
+    const firstEntry = activeEntries[0]!;
+    return (
+      <div className="p-4 max-w-2xl mx-auto">
+        <div className="flex flex-col items-center pt-8 pb-4 text-center">
+          <p className="text-sm text-slate-500 mb-6">Encrypted and saved on your device.</p>
+          <div className="w-full bg-slate-900 border border-slate-800 rounded-xl p-6 text-left mb-8">
+            <p className="text-slate-200 leading-relaxed whitespace-pre-wrap">
+              {firstEntry.content}
+            </p>
+            <p className="text-xs text-slate-500 mt-4">
+              {firstEntry.wordCount} words
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/entry/new?focus=1')}
+            className="bg-primary hover:bg-primary-hover text-white rounded-lg px-8 py-3 font-medium transition-colors"
+          >
+            Write another thought
+          </button>
+          <button
+            onClick={() => setShowWelcomeBanner(false)}
+            className="text-slate-500 hover:text-slate-300 text-sm mt-4 transition-colors"
+          >
+            I'm done for now
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 max-w-2xl mx-auto">
       {/* Page header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold">My Journal</h2>
+        <h2 className="text-2xl font-bold">Thoughts</h2>
         <Link
-          to="/entry/new"
+          to="/entry/new?focus=1"
           className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors"
         >
           <span>+</span>
-          <span>New Entry</span>
+          <span>Write</span>
         </Link>
       </div>
 
@@ -115,7 +203,7 @@ export function JournalPage() {
           <p className="text-slate-400 text-sm max-w-xs">
             {searchQuery || moodFilter
               ? 'Try adjusting your search or filters.'
-              : 'Start your journaling journey by creating your first entry. Everything stays private and encrypted on your device.'}
+              : 'Tap Write above to capture what\'s on your mind.'}
           </p>
         </div>
       ) : (
@@ -174,7 +262,7 @@ export function JournalPage() {
                 <button
                   onClick={(e) => {
                     e.preventDefault();
-                    deleteEntry(entry.id);
+                    setDeleteTarget(entry.id);
                   }}
                   className="text-slate-500 hover:text-danger text-sm transition-colors p-1"
                   title="Delete entry"
@@ -186,6 +274,16 @@ export function JournalPage() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete entry?"
+        message="This can't be undone. The entry will be permanently removed."
+        confirmLabel="Delete"
+        danger
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
