@@ -14,10 +14,12 @@ import {
   JournalPage,
   EntryEditorPage,
   StoryPage,
+  StoryViewPage,
   SettingsPage,
   LandingPage,
 } from '@presentation/pages';
 import { PREFERENCES_STORAGE_KEY } from '@shared/constants';
+import { useThemeEffect } from '@presentation/hooks/useThemeEffect';
 
 const Router = Capacitor.isNativePlatform() ? HashRouter : BrowserRouter;
 
@@ -33,6 +35,7 @@ function hasExistingVault(): boolean {
 }
 
 export function App() {
+  useThemeEffect();
   const [showSetup, setShowSetup] = useState(false);
   const vaultExists = hasExistingVault();
 
@@ -55,6 +58,7 @@ export function App() {
             <Route path="entry/new" element={<EntryEditorPage />} />
             <Route path="entry/:id" element={<EntryEditorPage />} />
             <Route path="story" element={<StoryPage />} />
+            <Route path="story/:id" element={<StoryViewPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>

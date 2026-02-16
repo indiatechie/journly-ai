@@ -1,34 +1,18 @@
 /**
  * Google Drive sync UI — renders inside SettingsPage.
- * Handles OAuth sign-in, push/pull, and status display.
+ * Handles OAuth sign-in via GoogleAuthService, push/pull, and status display.
  */
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { GoogleDriveService } from '@infrastructure/sync/GoogleDriveService';
 import { SyncService } from '@infrastructure/sync/SyncService';
+import { GoogleAuthService } from '@infrastructure/auth';
 import { storageAdapter } from '@infrastructure/storage';
 
-const GIS_SCRIPT_URL = 'https://accounts.google.com/gsi/client';
-const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 const LAST_SYNC_KEY = 'journly-last-sync';
 
 type Status = 'idle' | 'signing-in' | 'pushing' | 'pulling';
-
-function loadGisScript(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${GIS_SCRIPT_URL}"]`)) {
-      resolve();
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = GIS_SCRIPT_URL;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load Google Identity Services'));
-    document.head.appendChild(script);
-  });
-}
 
 export function GoogleDriveSync() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -37,7 +21,6 @@ export function GoogleDriveSync() {
   const [lastSync, setLastSync] = useState<string | null>(
     () => localStorage.getItem(LAST_SYNC_KEY),
   );
-  const tokenClientRef = useRef<google.accounts.oauth2.TokenClient | null>(null);
 
   // Clean up token on unmount
   useEffect(() => {
@@ -56,44 +39,25 @@ export function GoogleDriveSync() {
     setFeedback('');
 
     try {
-      await loadGisScript();
-
-      if (!tokenClientRef.current) {
-        tokenClientRef.current = google.accounts.oauth2.initTokenClient({
-          client_id: CLIENT_ID,
-          scope: DRIVE_SCOPE,
-          callback: (response) => {
-            if (response.error) {
-              setFeedback(`Sign-in failed: ${response.error_description || response.error}`);
-              setStatus('idle');
-              return;
-            }
-            setAccessToken(response.access_token);
-            setFeedback('Signed in to Google Drive.');
-            setStatus('idle');
-          },
-          error_callback: (error) => {
-            setFeedback(`Sign-in error: ${error.message}`);
-            setStatus('idle');
-          },
-        });
-      }
-
-      tokenClientRef.current.requestAccessToken({ prompt: '' });
-    } catch {
-      setFeedback('Failed to load Google sign-in. Check your connection.');
+      const token = await GoogleAuthService.signIn();
+      setAccessToken(token);
+      setFeedback('Signed in to Google Drive.');
+    } catch (e) {
+      setFeedback(`Sign-in failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    } finally {
       setStatus('idle');
     }
   }, []);
 
-  const handleSignOut = useCallback(() => {
-    if (accessToken) {
-      google.accounts.oauth2.revoke(accessToken);
+  const handleSignOut = useCallback(async () => {
+    try {
+      await GoogleAuthService.signOut();
+    } catch {
+      // Best-effort sign out
     }
     setAccessToken(null);
-    tokenClientRef.current = null;
     setFeedback('Signed out of Google Drive.');
-  }, [accessToken]);
+  }, []);
 
   const handlePush = useCallback(async () => {
     if (!accessToken) return;

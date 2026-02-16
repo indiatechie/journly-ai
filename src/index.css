@@ -18,6 +18,21 @@
   --color-danger: #ef4444;
 }
 
+/* Light theme overrides — warm inverted palette */
+[data-theme="light"] {
+  --color-slate-950: #faf7f4;
+  --color-slate-900: #f0ebe4;
+  --color-slate-800: #e0d8ce;
+  --color-slate-700: #c4b8a8;
+  --color-slate-400: #8a7e72;
+  --color-slate-300: #6b5f53;
+  --color-slate-200: #4a3f35;
+  --color-slate-100: #2c2420;
+  --color-primary: #c47830;
+  --color-primary-hover: #b36820;
+  --color-primary-dark: #a05a18;
+}
+
 /* Smooth transitions for theme switching */
 html {
   transition: background-color 0.2s ease, color 0.2s ease;
