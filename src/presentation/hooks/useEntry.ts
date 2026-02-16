@@ -47,17 +47,17 @@ export function useEntry() {
     return repo.findById(id);
   }, []);
 
-  const createEntry = useCallback(async (title: string, content: string, mood?: Mood, tags?: string[]) => {
+  const createEntry = useCallback(async (title: string, content: string, mood?: Mood, tags?: string[]): Promise<EntryId> => {
     const store = useEntryStore.getState();
     store.setEntryState('loading');
+    const entry = createJournalEntry({
+      id: generateId(),
+      title,
+      content,
+      mood,
+      tags,
+    });
     try {
-      const entry = createJournalEntry({
-        id: generateId(),
-        title,
-        content,
-        mood,
-        tags,
-      });
       const repo = getRepository();
       await repo.save(entry);
       store.addEntry(entry);
@@ -65,6 +65,7 @@ export function useEntry() {
       store.setError(e instanceof Error ? e.message : 'Failed to create entry');
       store.setEntryState('error');
     }
+    return entry.id;
   }, []);
 
   const updateEntry = useCallback(async (id: EntryId, updates: { title?: string; content?: string; mood?: Mood; tags?: string[] }) => {

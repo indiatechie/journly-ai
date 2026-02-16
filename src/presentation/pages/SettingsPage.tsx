@@ -8,6 +8,7 @@ import { useEncryption } from '@presentation/hooks/useEncryption';
 import { useToastStore } from '@application/store/useToastStore';
 import { useSettingsStore } from '@application/store/useSettingsStore';
 import { storageAdapter } from '@infrastructure/storage';
+import { FileIOService } from '@infrastructure/fileio/FileIOService';
 import { ConfirmDialog } from '@presentation/components/common/ConfirmDialog';
 import { GoogleDriveSync } from '@presentation/components/sync/GoogleDriveSync';
 import type { Theme } from '@domain/models/UserPreferences';
@@ -46,17 +47,7 @@ export function SettingsPage() {
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const envelopes = await storageAdapter.exportAll();
-      const blob = new Blob(
-        [JSON.stringify({ version: APP_VERSION, exportedAt: new Date().toISOString(), envelopes }, null, 2)],
-        { type: 'application/json' },
-      );
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `journly-backup-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+      await FileIOService.exportJSON();
       addToast('Backup exported successfully');
     } catch {
       addToast('Export failed. Please try again.', 'error');
@@ -65,29 +56,16 @@ export function SettingsPage() {
     }
   };
 
-  const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      setIsImporting(true);
-      try {
-        const text = await file.text();
-        const data = JSON.parse(text);
-        if (!data.envelopes || !Array.isArray(data.envelopes)) {
-          throw new Error('Invalid backup file');
-        }
-        await storageAdapter.importAll(data.envelopes);
-        addToast(`Imported ${data.envelopes.length} records. Reload to see changes.`, 'info');
-      } catch {
-        addToast('Import failed. Invalid backup file.', 'error');
-      } finally {
-        setIsImporting(false);
-      }
-    };
-    input.click();
+  const handleImport = async () => {
+    setIsImporting(true);
+    try {
+      const envelopes = await FileIOService.importJSON();
+      addToast(`Imported ${envelopes.length} records. Reload to see changes.`, 'info');
+    } catch {
+      addToast('Import failed. Invalid backup file.', 'error');
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const handleResetVault = async () => {

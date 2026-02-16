@@ -2,7 +2,7 @@
  * Journal page — warm, inviting daily journal experience.
  */
 
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useEntry } from '@presentation/hooks/useEntry';
 import { useSettingsStore } from '@application/store/useSettingsStore';
@@ -51,35 +51,6 @@ function getRelativeTime(date: Date): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function calculateStreak(entries: { createdAt: string; isDeleted?: boolean }[]): number {
-  const active = entries.filter((e) => !e.isDeleted);
-  if (active.length === 0) return 0;
-
-  const days = new Set(
-    active.map((e) => {
-      const d = new Date(e.createdAt);
-      return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-    }),
-  );
-
-  let streak = 0;
-  const today = new Date();
-  for (let i = 0; i < 365; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-    if (days.has(key)) {
-      streak++;
-    } else if (i === 0) {
-      // Today doesn't have an entry yet — that's fine, don't break streak
-      continue;
-    } else {
-      break;
-    }
-  }
-  return streak;
-}
-
 export function JournalPage() {
   const { entries, deleteEntry, loadEntries } = useEntry();
   const isVaultUnlocked = useSettingsStore((s) => s.isVaultUnlocked);
@@ -97,13 +68,6 @@ export function JournalPage() {
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem(FIRST_RUN_KEY),
   );
-  const [showWelcomeBanner, setShowWelcomeBanner] = useState(() => {
-    if (sessionStorage.getItem('journly-show-welcome')) {
-      sessionStorage.removeItem('journly-show-welcome');
-      return true;
-    }
-    return false;
-  });
   const [deleteTarget, setDeleteTarget] = useState<EntryId | null>(null);
 
   const handleConfirmDelete = useCallback(async () => {
@@ -121,7 +85,6 @@ export function JournalPage() {
   }, [isVaultUnlocked, loadEntries]);
 
   const activeEntries = entries.filter((e) => !e.isDeleted);
-  const streak = useMemo(() => calculateStreak(entries), [entries]);
 
   // Onboarding — ask what brings them here, pick a pack, start writing
   if (showOnboarding && activeEntries.length === 0) {
@@ -184,38 +147,6 @@ export function JournalPage() {
     );
   }
 
-  // Post-first-write welcome
-  if (showWelcomeBanner && activeEntries.length > 0) {
-    const firstEntry = activeEntries[0]!;
-    return (
-      <div className="p-4 max-w-2xl mx-auto">
-        <div className="flex flex-col items-center pt-8 pb-4 text-center">
-          <p className="text-sm text-slate-400 mb-6">Encrypted and saved on your device.</p>
-          <div className="w-full bg-slate-900/60 rounded-xl p-6 text-left mb-8">
-            <p className="text-slate-200 leading-relaxed whitespace-pre-wrap">
-              {firstEntry.content}
-            </p>
-            <p className="text-xs text-slate-400 mt-4">
-              {firstEntry.wordCount} words
-            </p>
-          </div>
-          <button
-            onClick={() => navigate('/entry/new?focus=1')}
-            className="bg-primary hover:bg-primary-hover text-slate-950 rounded-lg px-8 py-3 font-medium transition-colors"
-          >
-            Write another thought
-          </button>
-          <button
-            onClick={() => setShowWelcomeBanner(false)}
-            className="text-slate-400 hover:text-slate-200 text-sm mt-4 transition-colors"
-          >
-            I'm done for now
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const visibleEntries = activeEntries
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -252,78 +183,67 @@ export function JournalPage() {
           </button>
         </div>
 
-        <div className="flex items-start justify-between gap-3">
-          <p className={`text-slate-200 ${activeEntries.length >= 10 ? 'text-base' : 'text-lg'} leading-relaxed italic flex-1`}>
-            "{prompt}"
-          </p>
-          <div className="relative shrink-0">
-            <button
-              onClick={() => {
-                setPrompt(getRandomPrompt());
-                refreshCountRef.current += 1;
-                if (refreshCountRef.current >= 3 && !packDiscovered && !showPackNudge) {
-                  setShowPackNudge(true);
-                }
-              }}
-              className="text-slate-400 hover:text-primary transition-colors mt-1"
-              title="Different prompt"
-              aria-label="Refresh prompt"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                <path d="M3 3v5h5"/>
-                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
-                <path d="M16 16h5v5"/>
-              </svg>
-            </button>
-            {/* Nudge tooltip after 3+ refreshes */}
-            {showPackNudge && (
-              <div className="tooltip-fade-in absolute right-0 top-8 w-44 bg-slate-800 border border-slate-700 rounded-lg p-2.5 shadow-xl z-10">
-                <p className="text-xs text-slate-200 leading-relaxed">
-                  Want different themes?
-                </p>
-                <button
-                  onClick={() => {
-                    setShowPackNudge(false);
-                    localStorage.setItem(PACK_DISCOVERED_KEY, '1');
-                    setPackDiscovered(true);
-                    setShowPackPicker(true);
-                  }}
-                  className="text-xs text-primary hover:text-primary-hover font-medium mt-1 transition-colors"
-                >
-                  Try a different theme
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2 mt-4">
+        <textarea
+          rows={2}
+          placeholder={prompt}
+          className="w-full bg-transparent text-lg text-slate-200 placeholder:text-slate-500 placeholder:italic outline-none resize-none leading-relaxed"
+          value=""
+          onChange={() => {}}
+          onKeyDown={(e) => {
+            if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+              e.preventDefault();
+              sessionStorage.setItem('journly-draft', e.key);
+              navigate(`/entry/new?focus=1&prompt=${encodeURIComponent(prompt)}`);
+            }
+          }}
+        />
+        <div className="flex items-center gap-3 mt-2">
           <button
-            onClick={() => navigate(`/entry/new?focus=1&prompt=${encodeURIComponent(prompt)}`)}
-            className="bg-primary/15 hover:bg-primary/25 text-primary rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+            onClick={() => {
+              setPrompt(getRandomPrompt());
+              refreshCountRef.current += 1;
+              if (refreshCountRef.current >= 3 && !packDiscovered && !showPackNudge) {
+                setShowPackNudge(true);
+              }
+            }}
+            className="text-slate-400 hover:text-primary transition-colors"
+            title="Different prompt"
+            aria-label="Refresh prompt"
           >
-            Start writing
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+              <path d="M16 16h5v5"/>
+            </svg>
           </button>
           <button
             onClick={() => {
               const surprise = getRandomPromptAcrossAll();
               navigate(`/entry/new?focus=1&prompt=${encodeURIComponent(surprise)}`);
             }}
-            className="bg-slate-800/60 hover:bg-slate-800 text-slate-300 hover:text-slate-100 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+            className="text-slate-400 hover:text-slate-200 text-xs transition-colors"
           >
             Surprise me
           </button>
+          {/* Nudge tooltip after 3+ refreshes */}
+          {showPackNudge && (
+            <div className="tooltip-fade-in bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 shadow-xl">
+              <button
+                onClick={() => {
+                  setShowPackNudge(false);
+                  localStorage.setItem(PACK_DISCOVERED_KEY, '1');
+                  setPackDiscovered(true);
+                  setShowPackPicker(true);
+                }}
+                className="text-xs text-primary hover:text-primary-hover font-medium transition-colors"
+              >
+                Try a different theme
+              </button>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Streak badge */}
-      {streak >= 2 && (
-        <div className="flex items-center gap-2 mb-5 px-1">
-          <span className="text-primary text-sm">
-            {streak}-day streak
-          </span>
-        </div>
-      )}
 
       {/* Recent entries */}
       {visibleEntries.length === 0 ? (

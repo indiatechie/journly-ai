@@ -1,5 +1,6 @@
 /**
  * Entry editor page — distraction-free, warm writing experience.
+ * Auto-saves as you type. No save button.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -9,7 +10,8 @@ import { countWords } from '@domain/models/JournalEntry';
 import { inferMood } from '@shared/sentiment';
 import { getDailyPrompt } from '@shared/prompts';
 import { useToastStore } from '@application/store/useToastStore';
-import type { Mood } from '@domain/models/JournalEntry';
+import { hapticSuccess } from '@shared/haptics';
+import type { Mood, EntryId } from '@domain/models/JournalEntry';
 
 const MOOD_OPTIONS: { emoji: string; value: Mood }[] = [
   { emoji: '😊', value: 'great' },
@@ -18,6 +20,8 @@ const MOOD_OPTIONS: { emoji: string; value: Mood }[] = [
   { emoji: '😟', value: 'bad' },
   { emoji: '😢', value: 'awful' },
 ];
+
+const AUTOSAVE_DELAY = 1500;
 
 export function EntryEditorPage() {
   const navigate = useNavigate();
@@ -32,17 +36,34 @@ export function EntryEditorPage() {
   const promptParam = searchParams.get('prompt');
 
   const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState(() => {
+    const draft = sessionStorage.getItem('journly-draft');
+    if (draft) sessionStorage.removeItem('journly-draft');
+    return draft || '';
+  });
+
+  // Place cursor at end when starting from a journal-page draft
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (el && content.length > 0 && el.selectionStart === 0) {
+      el.setSelectionRange(content.length, content.length);
+    }
+    // Only on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [mood, setMood] = useState<Mood | undefined>(undefined);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [showTags, setShowTags] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [isLoadingEntry, setIsLoadingEntry] = useState(false);
-  const [isDirty, setIsDirty] = useState(false);
 
-  const [initialContent, setInitialContent] = useState('');
-  const [initialTitle, setInitialTitle] = useState('');
+  // Auto-save tracking
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [entryId, setEntryId] = useState<EntryId | null>(isEditMode && id ? id : null);
+  const hasShownToastRef = useRef(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const isSavingRef = useRef(false);
 
   // Load existing entry in edit mode
   useEffect(() => {
@@ -55,20 +76,14 @@ export function EntryEditorPage() {
       setContent(entry.content);
       setMood(entry.mood);
       setTags(entry.tags);
-      setInitialTitle(entry.title);
-      setInitialContent(entry.content);
+      setEntryId(entry.id);
+      hasShownToastRef.current = true; // Don't show toast for existing entries
       setIsLoadingEntry(false);
     }).catch(() => {
       if (!cancelled) setIsLoadingEntry(false);
     });
     return () => { cancelled = true; };
   }, [id, isEditMode, getEntryById]);
-
-  // Track dirty state
-  useEffect(() => {
-    const hasChanges = content !== initialContent || title !== initialTitle;
-    setIsDirty(hasChanges && (content.trim().length > 0 || title.trim().length > 0));
-  }, [content, title, initialContent, initialTitle]);
 
   // Auto-resize textarea
   const autoResize = useCallback(() => {
@@ -82,65 +97,88 @@ export function EntryEditorPage() {
     autoResize();
   }, [content, autoResize]);
 
-  const canSave = content.trim().length > 0 && !isSaving && !isLoadingEntry;
-
-  const handleSave = useCallback(async () => {
-    if (!canSave) return;
-    setIsSaving(true);
+  // Core save function
+  const doSave = useCallback(async () => {
+    if (content.trim().length === 0 || isSavingRef.current) return;
+    isSavingRef.current = true;
+    setSaveStatus('saving');
     try {
-      if (isEditMode && id) {
-        await updateEntry(id, {
+      if (entryId) {
+        await updateEntry(entryId, {
           title: title.trim() || 'Untitled',
           content,
-          mood,
+          mood: isFocusMode ? inferMood(content) : mood,
           tags,
         });
       } else {
-        const saveMood = isFocusMode ? inferMood(content) : mood;
-        await createEntry(title.trim() || 'Untitled', content, saveMood, tags);
+        const newId = await createEntry(
+          title.trim() || 'Untitled',
+          content,
+          isFocusMode ? inferMood(content) : mood,
+          tags,
+        );
+        setEntryId(newId);
       }
-      setIsDirty(false);
-      addToast(isEditMode ? 'Entry updated' : 'Entry saved');
-      if (isFocusMode) {
-        sessionStorage.setItem('journly-show-welcome', '1');
-        navigate('/', { replace: true });
-      } else {
-        navigate(-1);
+      setSaveStatus('saved');
+      if (!hasShownToastRef.current) {
+        hasShownToastRef.current = true;
+        void hapticSuccess();
+        addToast('Saved privately \u2713', 'success', 'You can let this go now.');
       }
     } catch (err) {
-      console.error('[EntryEditorPage] Save failed:', err);
-      addToast('Failed to save entry', 'error');
-      setIsSaving(false);
+      console.error('[EntryEditorPage] Auto-save failed:', err);
+      setSaveStatus('idle');
+    } finally {
+      isSavingRef.current = false;
     }
-  }, [canSave, isEditMode, isFocusMode, id, title, content, mood, tags, updateEntry, createEntry, navigate]);
+  }, [content, title, mood, tags, entryId, isFocusMode, updateEntry, createEntry, addToast]);
 
-  // Ctrl+S / Cmd+S
+  // Debounced auto-save on content/title/mood/tags change
+  useEffect(() => {
+    if (content.trim().length === 0 && !entryId) return;
+    if (isLoadingEntry) return;
+
+    setSaveStatus('idle');
+    clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      void doSave();
+    }, AUTOSAVE_DELAY);
+
+    return () => clearTimeout(saveTimerRef.current);
+  }, [content, title, mood, tags, doSave, entryId, isLoadingEntry]);
+
+  // Ctrl+S / Cmd+S — instant save
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        void handleSave();
+        clearTimeout(saveTimerRef.current);
+        void doSave();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSave]);
+  }, [doSave]);
 
-  // Unsaved changes warning
+  // Flush save before unload
   useEffect(() => {
-    if (!isDirty) return;
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
+    const handleBeforeUnload = () => {
+      clearTimeout(saveTimerRef.current);
+      // Can't await async in beforeunload, but trigger it
+      if (content.trim().length > 0) void doSave();
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isDirty]);
+  }, [doSave, content]);
 
   const handleBack = () => {
-    if (isDirty && !window.confirm('You have unsaved changes. Discard them?')) {
-      return;
+    // Flush any pending save immediately
+    clearTimeout(saveTimerRef.current);
+    if (content.trim().length > 0 && !isSavingRef.current) {
+      void doSave().then(() => navigate('/', { replace: true }));
+    } else {
+      navigate('/', { replace: true });
     }
-    navigate(-1);
   };
 
   const handleAddTag = () => {
@@ -164,6 +202,9 @@ export function EntryEditorPage() {
 
   const wordCount = countWords(content);
   const placeholderText = promptParam || getDailyPrompt();
+
+  // Save status indicator
+  const statusText = saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved \u2713' : null;
 
   if (isLoadingEntry) {
     return (
@@ -189,10 +230,21 @@ export function EntryEditorPage() {
             style={{ minHeight: '60vh' }}
           />
         </div>
-        <div className="sticky bottom-0 px-5 py-4 bg-slate-950/90 backdrop-blur-sm">
-          <div className="max-w-2xl mx-auto flex items-center justify-between">
+        <div className="sticky bottom-0 px-5 py-4 bg-slate-950/90 backdrop-blur-sm pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="max-w-2xl mx-auto flex items-center justify-between gap-2">
+            <button
+              onClick={handleBack}
+              className="text-slate-400 hover:text-slate-200 p-2 -ml-2 transition-colors"
+              aria-label="Close"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m15 18-6-6 6-6"/>
+              </svg>
+            </button>
             <span className="text-xs text-slate-400">
-              {wordCount} {wordCount === 1 ? 'word' : 'words'}
+              {wordCount > 0 && <>{wordCount} {wordCount === 1 ? 'word' : 'words'}</>}
+              {wordCount > 0 && statusText && <span className="text-slate-600 mx-1.5">&middot;</span>}
+              {statusText && <span className="text-slate-500">{statusText}</span>}
             </span>
             <div className="flex items-center gap-1.5">
               {MOOD_OPTIONS.map(({ emoji, value }) => (
@@ -211,17 +263,6 @@ export function EntryEditorPage() {
                 </button>
               ))}
             </div>
-            <button
-              disabled={!canSave}
-              onClick={handleSave}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                canSave
-                  ? 'bg-primary hover:bg-primary-hover text-slate-950'
-                  : 'bg-primary text-slate-950 opacity-50 cursor-not-allowed'
-              }`}
-            >
-              {isSaving ? 'Saving...' : 'Save'}
-            </button>
           </div>
         </div>
       </div>
@@ -242,17 +283,9 @@ export function EntryEditorPage() {
             <path d="m15 18-6-6 6-6"/>
           </svg>
         </button>
-        <button
-          disabled={!canSave}
-          onClick={handleSave}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            canSave
-              ? 'bg-primary hover:bg-primary-hover text-slate-950 cursor-pointer'
-              : 'bg-primary text-slate-950 opacity-50 cursor-not-allowed'
-          }`}
-        >
-          {isSaving ? 'Saving...' : 'Save'}
-        </button>
+        {statusText && (
+          <span className="text-xs text-slate-500">{statusText}</span>
+        )}
       </div>
 
       <div className="flex-1 max-w-2xl w-full mx-auto px-5">

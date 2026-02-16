@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useEncryption } from '@presentation/hooks/useEncryption';
 import { MIN_PASSPHRASE_LENGTH } from '@shared/constants';
+import { hapticSuccess } from '@shared/haptics';
 
 export function VaultGate({ children }: { children: React.ReactNode }) {
   const { isUnlocked, isFirstLaunch, setupVault, unlockVault } = useEncryption();
@@ -28,7 +29,8 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     const ok = await setupVault(passphrase);
     setIsLoading(false);
-    if (!ok) setError('Failed to set up vault. Please try again.');
+    if (ok) void hapticSuccess();
+    else setError('Failed to set up vault. Please try again.');
   };
 
   const handleUnlock = async () => {
@@ -36,7 +38,8 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     const ok = await unlockVault(passphrase);
     setIsLoading(false);
-    if (!ok) setError('Wrong passphrase. Please try again.');
+    if (ok) void hapticSuccess();
+    else setError('Wrong passphrase. Please try again.');
   };
 
   const handleSubmit = (e: React.FormEvent) => {

@@ -77,7 +77,7 @@ export const BUILT_IN_PACKS: PromptPack[] = [
   {
     id: 'exam-prep',
     name: 'Exam Prep & Focus',
-    description: 'Stay sharp and track what you learn',
+    description: 'A quiet space for what you\'re learning',
     icon: '📚',
     prompts: [
       'What concept clicked for you today?',
@@ -92,7 +92,7 @@ export const BUILT_IN_PACKS: PromptPack[] = [
       'What connection did you make between two ideas?',
       'What distracted you today, and how can you handle it tomorrow?',
       'Write a one-sentence summary of the most important thing you reviewed.',
-      'What would make tomorrow a productive study day?',
+      'What would make tomorrow a clear study day?',
       'What did you learn from a mistake or wrong answer?',
       'Rate your energy level — what affected it?',
     ],

@@ -42,7 +42,12 @@ export function ToastContainer() {
           className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border backdrop-blur-sm shadow-lg toast-enter ${variantStyles[toast.variant]}`}
         >
           <span className="shrink-0">{variantIcons[toast.variant]}</span>
-          <p className="text-sm flex-1">{toast.message}</p>
+          <div className="flex-1">
+            <p className="text-sm">{toast.message}</p>
+            {toast.secondary && (
+              <p className="text-xs opacity-60 mt-0.5">{toast.secondary}</p>
+            )}
+          </div>
           <button
             onClick={() => removeToast(toast.id)}
             className="shrink-0 opacity-60 hover:opacity-100 transition-opacity"

@@ -10,6 +10,23 @@ const config: CapacitorConfig = {
         webClientId: process.env.VITE_GOOGLE_CLIENT_ID ?? '',
       },
     },
+    StatusBar: {
+      style: 'DARK',
+      backgroundColor: '#1a1614',
+      overlaysWebView: true,
+    },
+    SplashScreen: {
+      launchAutoHide: false,
+      backgroundColor: '#1a1614',
+      showSpinner: false,
+    },
+    Keyboard: {
+      resize: 'body',
+      scrollAssist: true,
+    },
+  },
+  server: {
+    allowNavigation: [],
   },
 };
 

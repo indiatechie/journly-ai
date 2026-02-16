@@ -6,9 +6,11 @@
 
 import { Outlet, NavLink } from 'react-router-dom';
 import { useEncryption } from '@presentation/hooks/useEncryption';
+import { useNativeBackButton } from '@presentation/hooks/useNativeBackButton';
 
 export function AppLayout() {
   const { lockVault } = useEncryption();
+  useNativeBackButton();
 
   return (
     <div className="flex flex-col h-dvh bg-slate-950 text-slate-100">
