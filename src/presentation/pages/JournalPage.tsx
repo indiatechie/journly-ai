@@ -65,6 +65,7 @@ export function JournalPage() {
   );
   const [showPackNudge, setShowPackNudge] = useState(false);
   const refreshCountRef = useRef(0);
+  const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem(FIRST_RUN_KEY),
   );
@@ -184,6 +185,7 @@ export function JournalPage() {
         </div>
 
         <textarea
+          ref={promptTextareaRef}
           rows={2}
           placeholder={prompt}
           className="w-full bg-transparent text-lg text-slate-200 placeholder:text-slate-500 placeholder:italic outline-none resize-none leading-relaxed"
@@ -197,7 +199,7 @@ export function JournalPage() {
             }
           }}
         />
-        <div className="flex items-center gap-3 mt-2">
+        <div className="flex items-center gap-2 mt-3">
           <button
             onClick={() => {
               setPrompt(getRandomPrompt());
@@ -205,24 +207,18 @@ export function JournalPage() {
               if (refreshCountRef.current >= 3 && !packDiscovered && !showPackNudge) {
                 setShowPackNudge(true);
               }
+              promptTextareaRef.current?.focus();
             }}
-            className="text-slate-400 hover:text-primary transition-colors"
-            title="Different prompt"
-            aria-label="Refresh prompt"
+            className="px-3.5 py-2 rounded-lg border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-slate-100 text-sm transition-colors"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-              <path d="M3 3v5h5"/>
-              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
-              <path d="M16 16h5v5"/>
-            </svg>
+            Try another
           </button>
           <button
             onClick={() => {
               const surprise = getRandomPromptAcrossAll();
               navigate(`/entry/new?focus=1&prompt=${encodeURIComponent(surprise)}`);
             }}
-            className="text-slate-400 hover:text-slate-200 text-xs transition-colors"
+            className="px-3.5 py-2 rounded-lg border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-slate-100 text-sm transition-colors"
           >
             Surprise me
           </button>

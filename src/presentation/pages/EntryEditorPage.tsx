@@ -234,12 +234,13 @@ export function EntryEditorPage() {
           <div className="max-w-2xl mx-auto flex items-center justify-between gap-2">
             <button
               onClick={handleBack}
-              className="text-slate-400 hover:text-slate-200 p-2 -ml-2 transition-colors"
-              aria-label="Close"
+              className="flex items-center gap-1.5 text-slate-300 hover:text-slate-100 bg-slate-800/60 hover:bg-slate-800 px-4 py-2.5 rounded-xl transition-colors"
+              aria-label="Done"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m15 18-6-6 6-6"/>
               </svg>
+              <span className="text-base font-medium">Done</span>
             </button>
             <span className="text-xs text-slate-400">
               {wordCount > 0 && <>{wordCount} {wordCount === 1 ? 'word' : 'words'}</>}
@@ -276,12 +277,13 @@ export function EntryEditorPage() {
       <div className="flex items-center justify-between px-4 py-3">
         <button
           onClick={handleBack}
-          className="text-slate-400 hover:text-slate-200 text-sm transition-colors"
-          aria-label="Go back"
+          className="flex items-center gap-1.5 text-slate-300 hover:text-slate-100 bg-slate-800/60 hover:bg-slate-800 px-4 py-2.5 rounded-xl transition-colors"
+          aria-label="Done"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="m15 18-6-6 6-6"/>
           </svg>
+          <span className="text-base font-medium">Done</span>
         </button>
         {statusText && (
           <span className="text-xs text-slate-500">{statusText}</span>
