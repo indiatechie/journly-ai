@@ -11,3 +11,10 @@ createRoot(rootElement).render(
     <App />
   </StrictMode>,
 );
+
+// Expose demo seeder in dev mode — run `seedDemo()` in browser console
+if (import.meta.env.DEV) {
+  import('@shared/demoSeed').then(({ seedDemo }) => {
+    (window as unknown as Record<string, unknown>).seedDemo = seedDemo;
+  });
+}

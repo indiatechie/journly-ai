@@ -200,3 +200,9 @@ export function getRandomPrompt(): string {
   } while (prompt === daily && pack.prompts.length > 1);
   return prompt;
 }
+
+/** Returns a random prompt from any pack (not just the active one). */
+export function getRandomPromptAcrossAll(): string {
+  const pack = BUILT_IN_PACKS[Math.floor(Math.random() * BUILT_IN_PACKS.length)]!;
+  return pack.prompts[Math.floor(Math.random() * pack.prompts.length)]!;
+}

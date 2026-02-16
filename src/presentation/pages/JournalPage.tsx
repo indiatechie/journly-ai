@@ -7,7 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useEntry } from '@presentation/hooks/useEntry';
 import { useSettingsStore } from '@application/store/useSettingsStore';
 import { ConfirmDialog } from '@presentation/components/common/ConfirmDialog';
-import { getDailyPrompt, getRandomPrompt, getActivePack, setActivePack, BUILT_IN_PACKS } from '@shared/prompts';
+import { getDailyPrompt, getRandomPrompt, getRandomPromptAcrossAll, getActivePack, setActivePack, BUILT_IN_PACKS } from '@shared/prompts';
 import type { EntryId } from '@domain/models/JournalEntry';
 
 const FIRST_RUN_KEY = 'journly-first-run-complete';
@@ -225,7 +225,7 @@ export function JournalPage() {
       </div>
 
       {/* Daily prompt card */}
-      <div className="bg-slate-900/60 rounded-2xl p-5 mb-5">
+      <div className={`${activeEntries.length >= 10 ? 'bg-slate-900/30' : 'bg-slate-900/60'} rounded-2xl p-5 mb-5`}>
         {/* Pack chip — inside the card for context */}
         <div className="flex items-center justify-between mb-3">
           <button
@@ -250,7 +250,7 @@ export function JournalPage() {
         </div>
 
         <div className="flex items-start justify-between gap-3">
-          <p className="text-slate-200 text-lg leading-relaxed italic flex-1">
+          <p className={`text-slate-200 ${activeEntries.length >= 10 ? 'text-base' : 'text-lg'} leading-relaxed italic flex-1`}>
             "{prompt}"
           </p>
           <div className="relative shrink-0">
@@ -288,18 +288,29 @@ export function JournalPage() {
                   }}
                   className="text-xs text-primary hover:text-primary-hover font-medium mt-1 transition-colors"
                 >
-                  Try a different pack
+                  Try a different theme
                 </button>
               </div>
             )}
           </div>
         </div>
-        <button
-          onClick={() => navigate(`/entry/new?focus=1&prompt=${encodeURIComponent(prompt)}`)}
-          className="mt-4 bg-primary/15 hover:bg-primary/25 text-primary rounded-lg px-4 py-2 text-sm font-medium transition-colors"
-        >
-          Start writing
-        </button>
+        <div className="flex items-center gap-2 mt-4">
+          <button
+            onClick={() => navigate(`/entry/new?focus=1&prompt=${encodeURIComponent(prompt)}`)}
+            className="bg-primary/15 hover:bg-primary/25 text-primary rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+          >
+            Start writing
+          </button>
+          <button
+            onClick={() => {
+              const surprise = getRandomPromptAcrossAll();
+              navigate(`/entry/new?focus=1&prompt=${encodeURIComponent(surprise)}`);
+            }}
+            className="bg-slate-800/60 hover:bg-slate-800 text-slate-300 hover:text-slate-100 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+          >
+            Surprise me
+          </button>
+        </div>
       </div>
 
       {/* Streak badge */}
@@ -396,7 +407,7 @@ export function JournalPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-100">Prompt Packs</h3>
+              <h3 className="text-lg font-semibold text-slate-100">What would you like to reflect on?</h3>
               <button
                 onClick={() => setShowPackPicker(false)}
                 className="text-slate-400 hover:text-slate-200 transition-colors p-1"
