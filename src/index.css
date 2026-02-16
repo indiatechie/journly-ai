@@ -80,6 +80,31 @@ html {
   animation: slide-up 0.25s ease-out;
 }
 
+/* Toast enter animation */
+@keyframes toast-enter {
+  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.toast-enter {
+  animation: toast-enter 0.2s ease-out;
+}
+
+/* Page fade-in on route change */
+@keyframes page-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.page-fade-in {
+  animation: page-fade-in 0.15s ease-out;
+}
+
+/* Focus ring for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* Safe area insets for iOS PWA */
 body {
   padding-top: env(safe-area-inset-top);

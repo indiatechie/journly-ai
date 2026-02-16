@@ -8,6 +8,7 @@ import { useEntry } from '@presentation/hooks/useEntry';
 import { useSettingsStore } from '@application/store/useSettingsStore';
 import { ConfirmDialog } from '@presentation/components/common/ConfirmDialog';
 import { getDailyPrompt, getRandomPrompt, getRandomPromptAcrossAll, getActivePack, setActivePack, BUILT_IN_PACKS } from '@shared/prompts';
+import { useToastStore } from '@application/store/useToastStore';
 import type { EntryId } from '@domain/models/JournalEntry';
 
 const FIRST_RUN_KEY = 'journly-first-run-complete';
@@ -83,6 +84,7 @@ export function JournalPage() {
   const { entries, deleteEntry, loadEntries } = useEntry();
   const isVaultUnlocked = useSettingsStore((s) => s.isVaultUnlocked);
   const navigate = useNavigate();
+  const addToast = useToastStore((s) => s.addToast);
 
   const [activePack, setActivePackState] = useState(getActivePack);
   const [prompt, setPrompt] = useState(getDailyPrompt);
@@ -108,8 +110,9 @@ export function JournalPage() {
     if (deleteTarget) {
       await deleteEntry(deleteTarget);
       setDeleteTarget(null);
+      addToast('Entry deleted');
     }
-  }, [deleteTarget, deleteEntry]);
+  }, [deleteTarget, deleteEntry, addToast]);
 
   useEffect(() => {
     if (isVaultUnlocked) {
@@ -364,6 +367,7 @@ export function JournalPage() {
                   }}
                   className="text-slate-400 hover:text-danger text-xs transition-colors p-1"
                   title="Delete entry"
+                  aria-label="Delete entry"
                 >
                   Delete
                 </button>
@@ -403,6 +407,9 @@ export function JournalPage() {
         >
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Choose reflection theme"
             className="relative w-full max-w-lg bg-slate-900 rounded-t-2xl p-5 pb-8 max-h-[70dvh] overflow-y-auto sheet-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
@@ -411,6 +418,7 @@ export function JournalPage() {
               <button
                 onClick={() => setShowPackPicker(false)}
                 className="text-slate-400 hover:text-slate-200 transition-colors p-1"
+                aria-label="Close"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 6 6 18"/><path d="m6 6 12 12"/>

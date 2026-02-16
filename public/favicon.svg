@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e0a370"/>
+      <stop offset="100%" style="stop-color:#c8884c"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- Book/journal shape -->
+  <g transform="translate(128, 96)" fill="none" stroke="#1a1614" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Book cover -->
+    <path d="M0 280V40C0 17.9 17.9 0 40 0h216v320H40c-22.1 0-40-17.9-40-40z" fill="#1a1614" opacity="0.15"/>
+    <path d="M0 280V40C0 17.9 17.9 0 40 0h216v320H40c-22.1 0-40-17.9-40-40z"/>
+    <!-- Book spine -->
+    <path d="M40 320h216" />
+    <path d="M40 320c-22.1 0-40-17.9-40-40"/>
+    <!-- Pen -->
+    <g transform="translate(60, 60)">
+      <path d="M120 20L140 0 160 20 50 130 30 140 40 120Z" stroke-width="14"/>
+      <path d="M110 30L130 50" stroke-width="12"/>
+    </g>
+  </g>
+</svg>

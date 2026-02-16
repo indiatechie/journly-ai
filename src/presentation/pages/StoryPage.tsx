@@ -15,6 +15,7 @@ import { MockAIAdapter } from '@infrastructure/ai/MockAIAdapter';
 import type { JournalEntry } from '@domain/models/JournalEntry';
 import { formatDate } from '@shared/utils/dateUtils';
 import { ConfirmDialog } from '@presentation/components/common/ConfirmDialog';
+import { useToastStore } from '@application/store/useToastStore';
 import type { StoryId } from '@domain/models/Story';
 
 type FlowStep = 'idle' | 'theme-input' | 'matching' | 'preview' | 'generating' | 'done';
@@ -65,6 +66,7 @@ export function StoryPage() {
   const [replacements, setReplacements] = useState<Map<string, string>>(new Map());
   const [generatedTitle, setGeneratedTitle] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
+  const addToast = useToastStore((s) => s.addToast);
   const [deleteTarget, setDeleteTarget] = useState<StoryId | null>(null);
 
   useEffect(() => {
@@ -119,6 +121,7 @@ export function StoryPage() {
       setGeneratedContent(repersonalized);
       setStep('done');
     } catch {
+      addToast('Story generation failed. Try again.', 'error');
       setStep('preview');
     }
   }, [theme, anonymizedText, replacements]);
@@ -131,13 +134,14 @@ export function StoryPage() {
       prompt: theme,
       provider: 'local',
     });
+    addToast('Story saved');
     setStep('idle');
     setTheme('');
     setMatchedEntries([]);
     setAnonymizedText('');
     setGeneratedContent('');
     setGeneratedTitle('');
-  }, [generatedTitle, generatedContent, matchedEntries, theme, saveStory]);
+  }, [generatedTitle, generatedContent, matchedEntries, theme, saveStory, addToast]);
 
   const handleDiscard = useCallback(() => {
     setStep('idle');
@@ -152,8 +156,9 @@ export function StoryPage() {
     if (deleteTarget) {
       await deleteStory(deleteTarget);
       setDeleteTarget(null);
+      addToast('Story deleted');
     }
-  }, [deleteTarget, deleteStory]);
+  }, [deleteTarget, deleteStory, addToast]);
 
   // --- Render based on step ---
 

@@ -28,15 +28,16 @@ export function AppLayout() {
       </header>
 
       {/* Main content area */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto page-fade-in">
         <Outlet />
       </main>
 
       {/* Bottom navigation — warm SVG icons */}
-      <nav className="flex items-center justify-around border-t border-slate-800 pb-[env(safe-area-inset-bottom)]">
+      <nav aria-label="Main navigation" className="flex items-center justify-around border-t border-slate-800 pb-[env(safe-area-inset-bottom)]">
         <NavLink
           to="/"
           end
+          aria-label="Journal"
           className={({ isActive }) =>
             `flex flex-col items-center gap-0.5 px-4 py-2.5 text-xs transition-colors ${
               isActive
@@ -53,6 +54,7 @@ export function AppLayout() {
 
         <NavLink
           to="/story"
+          aria-label="Stories"
           className={({ isActive }) =>
             `flex flex-col items-center gap-0.5 px-4 py-2.5 text-xs transition-colors ${
               isActive
@@ -69,6 +71,7 @@ export function AppLayout() {
 
         <NavLink
           to="/settings"
+          aria-label="Settings"
           className={({ isActive }) =>
             `flex flex-col items-center gap-0.5 px-4 py-2.5 text-xs transition-colors ${
               isActive

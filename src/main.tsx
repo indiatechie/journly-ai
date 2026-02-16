@@ -1,5 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { ErrorBoundary } from '@presentation/components/common/ErrorBoundary';
+import { ToastContainer } from '@presentation/components/common/Toast';
 import { App } from './App';
 import './index.css';
 
@@ -8,7 +10,10 @@ if (!rootElement) throw new Error('Root element #root not found');
 
 createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+      <ToastContainer />
+    </ErrorBoundary>
   </StrictMode>,
 );
 

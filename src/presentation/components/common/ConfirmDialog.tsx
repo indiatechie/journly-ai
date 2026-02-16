@@ -51,10 +51,13 @@ export function ConfirmDialog({
       onClick={onCancel}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-dialog-title"
         className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-sm shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-lg font-semibold text-slate-100 mb-2">{title}</h3>
+        <h3 id="confirm-dialog-title" className="text-lg font-semibold text-slate-100 mb-2">{title}</h3>
         <p className="text-sm text-slate-400 mb-6">{message}</p>
         <div className="flex gap-3 justify-end">
           <button

@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { APP_NAME, APP_VERSION, PREFERENCES_STORAGE_KEY } from '@shared/constants';
 import { useEncryption } from '@presentation/hooks/useEncryption';
+import { useToastStore } from '@application/store/useToastStore';
 import { useSettingsStore } from '@application/store/useSettingsStore';
 import { storageAdapter } from '@infrastructure/storage';
 import { ConfirmDialog } from '@presentation/components/common/ConfirmDialog';
@@ -19,13 +20,13 @@ const THEMES: { label: string; value: Theme }[] = [
 
 export function SettingsPage() {
   const { lockVault } = useEncryption();
+  const addToast = useToastStore((s) => s.addToast);
   const theme = useSettingsStore((s) => s.preferences.theme);
   const setTheme = useSettingsStore((s) => s.setTheme);
 
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [feedback, setFeedback] = useState('');
 
   const handleThemeChange = (newTheme: Theme) => {
     setTheme(newTheme);
@@ -44,7 +45,6 @@ export function SettingsPage() {
 
   const handleExport = async () => {
     setIsExporting(true);
-    setFeedback('');
     try {
       const envelopes = await storageAdapter.exportAll();
       const blob = new Blob(
@@ -57,9 +57,9 @@ export function SettingsPage() {
       a.download = `journly-backup-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      setFeedback('Backup exported successfully.');
+      addToast('Backup exported successfully');
     } catch {
-      setFeedback('Export failed. Please try again.');
+      addToast('Export failed. Please try again.', 'error');
     } finally {
       setIsExporting(false);
     }
@@ -73,7 +73,6 @@ export function SettingsPage() {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
       setIsImporting(true);
-      setFeedback('');
       try {
         const text = await file.text();
         const data = JSON.parse(text);
@@ -81,9 +80,9 @@ export function SettingsPage() {
           throw new Error('Invalid backup file');
         }
         await storageAdapter.importAll(data.envelopes);
-        setFeedback(`Imported ${data.envelopes.length} records. Reload to see changes.`);
+        addToast(`Imported ${data.envelopes.length} records. Reload to see changes.`, 'info');
       } catch {
-        setFeedback('Import failed. Make sure the file is a valid Journly backup.');
+        addToast('Import failed. Invalid backup file.', 'error');
       } finally {
         setIsImporting(false);
       }
@@ -102,7 +101,7 @@ export function SettingsPage() {
       // Force full reload to return to landing page
       window.location.reload();
     } catch {
-      setFeedback('Reset failed.');
+      addToast('Reset failed.', 'error');
     }
   };
 
@@ -193,9 +192,6 @@ export function SettingsPage() {
               {isImporting ? 'Importing...' : 'Import Backup'}
             </button>
           </div>
-          {feedback && (
-            <p className="text-sm text-slate-400 mb-3">{feedback}</p>
-          )}
           <div className="border-t border-slate-800 pt-3 mt-3">
             <button
               onClick={() => setShowResetConfirm(true)}
