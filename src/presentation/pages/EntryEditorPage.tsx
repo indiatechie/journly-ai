@@ -217,8 +217,8 @@ export function EntryEditorPage() {
   // Focus mode: distraction-free writing — full warm canvas
   if (isFocusMode && !isEditMode) {
     return (
-      <div className="flex flex-col min-h-dvh bg-slate-950">
-        <div className="flex-1 max-w-2xl w-full mx-auto px-5 pt-12">
+      <div className="flex flex-col flex-1 min-h-0 bg-slate-950">
+        <div className="flex-1 min-h-0 overflow-y-auto max-w-2xl w-full mx-auto px-5 pt-12">
           <textarea
             ref={textareaRef}
             value={content}
@@ -227,7 +227,7 @@ export function EntryEditorPage() {
             autoFocus
             placeholder={placeholderText}
             className="w-full bg-transparent text-xl text-slate-200 placeholder:text-slate-700 outline-none resize-none leading-loose"
-            style={{ minHeight: '60vh' }}
+            style={{ minHeight: '200px' }}
           />
         </div>
         <div className="sticky bottom-0 px-5 py-4 bg-slate-950/90 backdrop-blur-sm pb-[max(1rem,env(safe-area-inset-bottom))]">
@@ -269,7 +269,7 @@ export function EntryEditorPage() {
 
   // Standard mode — editing existing entries
   return (
-    <div className="flex flex-col min-h-dvh bg-slate-950">
+    <div className="flex flex-col flex-1 min-h-0 bg-slate-950">
       {/* Subtle top bar */}
       <div className="flex items-center justify-between px-4 py-3">
         {statusText ? (
@@ -286,7 +286,7 @@ export function EntryEditorPage() {
         </button>
       </div>
 
-      <div className="flex-1 max-w-2xl w-full mx-auto px-5">
+      <div className="flex-1 min-h-0 overflow-y-auto max-w-2xl w-full mx-auto px-5">
         {/* Title — borderless */}
         <input
           type="text"

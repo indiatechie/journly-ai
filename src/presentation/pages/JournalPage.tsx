@@ -190,13 +190,21 @@ export function JournalPage() {
           placeholder={prompt}
           className="w-full bg-transparent text-lg text-slate-200 placeholder:text-slate-500 placeholder:italic outline-none resize-none leading-relaxed"
           value=""
-          onChange={() => {}}
           onKeyDown={(e) => {
             if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
               e.preventDefault();
               sessionStorage.setItem('journly-draft', e.key);
               navigate(`/entry/new?focus=1&prompt=${encodeURIComponent(prompt)}`);
             }
+          }}
+          onBeforeInput={(e) => {
+            // Android virtual keyboards often skip keyDown — catch input here
+            e.preventDefault();
+            const data = (e as unknown as InputEvent).data;
+            if (data) {
+              sessionStorage.setItem('journly-draft', data);
+            }
+            navigate(`/entry/new?focus=1&prompt=${encodeURIComponent(prompt)}`);
           }}
         />
         <div className="flex items-center gap-2 mt-3">
