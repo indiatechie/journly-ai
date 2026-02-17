@@ -8,7 +8,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useEntry } from '@presentation/hooks/useEntry';
 import { countWords } from '@domain/models/JournalEntry';
 import { inferMood } from '@shared/sentiment';
-import { getDailyPrompt } from '@shared/prompts';
+import { getDailyPrompt, getWorkReflectionTemplate } from '@shared/prompts';
 import { useToastStore } from '@application/store/useToastStore';
 import { hapticSuccess } from '@shared/haptics';
 import type { Mood, EntryId } from '@domain/models/JournalEntry';
@@ -34,9 +34,13 @@ export function EntryEditorPage() {
   const isEditMode = Boolean(id) && id !== 'new';
   const isFocusMode = searchParams.get('focus') === '1';
   const promptParam = searchParams.get('prompt');
+  const templateParam = searchParams.get('template');
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState(() => {
+    if (templateParam === 'work-reflection') {
+      return getWorkReflectionTemplate();
+    }
     const draft = sessionStorage.getItem('journly-draft');
     if (draft) sessionStorage.removeItem('journly-draft');
     return draft || '';

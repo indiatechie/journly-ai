@@ -159,95 +159,130 @@ export function JournalPage() {
         <p className="text-sm text-slate-400 mt-0.5">{getFormattedDate()}</p>
       </div>
 
-      {/* Daily prompt card */}
-      <div className={`${activeEntries.length >= 10 ? 'bg-slate-900/30' : 'bg-slate-900/60'} rounded-2xl p-5 mb-5`}>
-        {/* Pack chip — inside the card for context */}
-        <div className="flex items-center justify-between mb-3">
-          <button
-            onClick={() => {
-              if (!packDiscovered) {
-                localStorage.setItem(PACK_DISCOVERED_KEY, '1');
-                setPackDiscovered(true);
-              }
-              setShowPackNudge(false);
-              setShowPackPicker(true);
-            }}
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-slate-700 hover:border-primary/50 hover:bg-primary/10 text-sm text-slate-300 hover:text-primary transition-all ${
-              !packDiscovered ? 'pack-chip-intro' : ''
-            }`}
-          >
-            <span>{activePack.icon}</span>
-            <span>{activePack.name}</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
-              <path d="m6 9 6 6 6-6"/>
-            </svg>
-          </button>
-        </div>
-
-        <textarea
-          ref={promptTextareaRef}
-          rows={2}
-          placeholder={prompt}
-          className="w-full bg-transparent text-lg text-slate-200 placeholder:text-slate-500 placeholder:italic outline-none resize-none leading-relaxed"
-          value=""
-          onKeyDown={(e) => {
-            if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-              e.preventDefault();
-              sessionStorage.setItem('journly-draft', e.key);
-              navigate(`/entry/new?focus=1&prompt=${encodeURIComponent(prompt)}`);
-            }
-          }}
-          onBeforeInput={(e) => {
-            // Android virtual keyboards often skip keyDown — catch input here
-            e.preventDefault();
-            const data = (e as unknown as InputEvent).data;
-            if (data) {
-              sessionStorage.setItem('journly-draft', data);
-            }
-            navigate(`/entry/new?focus=1&prompt=${encodeURIComponent(prompt)}`);
-          }}
-        />
-        <div className="flex items-center gap-2 mt-3">
-          <button
-            onClick={() => {
-              setPrompt(getRandomPrompt());
-              refreshCountRef.current += 1;
-              if (refreshCountRef.current >= 3 && !packDiscovered && !showPackNudge) {
-                setShowPackNudge(true);
-              }
-              promptTextareaRef.current?.focus();
-            }}
-            className="px-3.5 py-2 rounded-lg border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-slate-100 text-sm transition-colors"
-          >
-            Try another
-          </button>
-          <button
-            onClick={() => {
-              const surprise = getRandomPromptAcrossAll();
-              navigate(`/entry/new?focus=1&prompt=${encodeURIComponent(surprise)}`);
-            }}
-            className="px-3.5 py-2 rounded-lg border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-slate-100 text-sm transition-colors"
-          >
-            Surprise me
-          </button>
-          {/* Nudge tooltip after 3+ refreshes */}
-          {showPackNudge && (
-            <div className="tooltip-fade-in bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 shadow-xl">
-              <button
-                onClick={() => {
-                  setShowPackNudge(false);
+      {/* Work Reflection card — shown when work-reflection pack is active */}
+      {activePack.id === 'work-reflection' ? (
+        <div className={`${activeEntries.length >= 10 ? 'bg-slate-900/30' : 'bg-slate-900/60'} rounded-2xl p-5 mb-5`}>
+          <div className="flex items-center justify-between mb-3">
+            <button
+              onClick={() => {
+                if (!packDiscovered) {
                   localStorage.setItem(PACK_DISCOVERED_KEY, '1');
                   setPackDiscovered(true);
-                  setShowPackPicker(true);
-                }}
-                className="text-xs text-primary hover:text-primary-hover font-medium transition-colors"
-              >
-                Try a different theme
-              </button>
-            </div>
-          )}
+                }
+                setShowPackNudge(false);
+                setShowPackPicker(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-slate-700 hover:border-primary/50 hover:bg-primary/10 text-sm text-slate-300 hover:text-primary transition-all"
+            >
+              <span>{activePack.icon}</span>
+              <span>{activePack.name}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
+                <path d="m6 9 6 6 6-6"/>
+              </svg>
+            </button>
+          </div>
+
+          <h3 className="text-lg font-semibold text-slate-100 mb-1">Today's reflection</h3>
+          <p className="text-sm text-slate-400 mb-4">Wins · Challenges · Learned · Tomorrow</p>
+
+          <button
+            onClick={() => navigate('/entry/new?focus=1&template=work-reflection')}
+            className="w-full py-3 rounded-xl bg-primary hover:bg-primary-hover text-slate-950 font-medium text-base transition-colors"
+          >
+            Start today's reflection
+          </button>
         </div>
-      </div>
+      ) : (
+        /* Daily prompt card */
+        <div className={`${activeEntries.length >= 10 ? 'bg-slate-900/30' : 'bg-slate-900/60'} rounded-2xl p-5 mb-5`}>
+          {/* Pack chip — inside the card for context */}
+          <div className="flex items-center justify-between mb-3">
+            <button
+              onClick={() => {
+                if (!packDiscovered) {
+                  localStorage.setItem(PACK_DISCOVERED_KEY, '1');
+                  setPackDiscovered(true);
+                }
+                setShowPackNudge(false);
+                setShowPackPicker(true);
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-slate-700 hover:border-primary/50 hover:bg-primary/10 text-sm text-slate-300 hover:text-primary transition-all ${
+                !packDiscovered ? 'pack-chip-intro' : ''
+              }`}
+            >
+              <span>{activePack.icon}</span>
+              <span>{activePack.name}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
+                <path d="m6 9 6 6 6-6"/>
+              </svg>
+            </button>
+          </div>
+
+          <textarea
+            ref={promptTextareaRef}
+            rows={2}
+            placeholder={prompt}
+            className="w-full bg-transparent text-lg text-slate-200 placeholder:text-slate-500 placeholder:italic outline-none resize-none leading-relaxed"
+            value=""
+            onKeyDown={(e) => {
+              if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                e.preventDefault();
+                sessionStorage.setItem('journly-draft', e.key);
+                navigate(`/entry/new?focus=1&prompt=${encodeURIComponent(prompt)}`);
+              }
+            }}
+            onBeforeInput={(e) => {
+              // Android virtual keyboards often skip keyDown — catch input here
+              e.preventDefault();
+              const data = (e as unknown as InputEvent).data;
+              if (data) {
+                sessionStorage.setItem('journly-draft', data);
+              }
+              navigate(`/entry/new?focus=1&prompt=${encodeURIComponent(prompt)}`);
+            }}
+          />
+          <div className="flex items-center gap-2 mt-3">
+            <button
+              onClick={() => {
+                setPrompt(getRandomPrompt());
+                refreshCountRef.current += 1;
+                if (refreshCountRef.current >= 3 && !packDiscovered && !showPackNudge) {
+                  setShowPackNudge(true);
+                }
+                promptTextareaRef.current?.focus();
+              }}
+              className="px-3.5 py-2 rounded-lg border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-slate-100 text-sm transition-colors"
+            >
+              Try another
+            </button>
+            <button
+              onClick={() => {
+                const surprise = getRandomPromptAcrossAll();
+                navigate(`/entry/new?focus=1&prompt=${encodeURIComponent(surprise)}`);
+              }}
+              className="px-3.5 py-2 rounded-lg border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-slate-100 text-sm transition-colors"
+            >
+              Surprise me
+            </button>
+            {/* Nudge tooltip after 3+ refreshes */}
+            {showPackNudge && (
+              <div className="tooltip-fade-in bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 shadow-xl">
+                <button
+                  onClick={() => {
+                    setShowPackNudge(false);
+                    localStorage.setItem(PACK_DISCOVERED_KEY, '1');
+                    setPackDiscovered(true);
+                    setShowPackPicker(true);
+                  }}
+                  className="text-xs text-primary hover:text-primary-hover font-medium transition-colors"
+                >
+                  Try a different theme
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Recent entries */}
       {visibleEntries.length === 0 ? (

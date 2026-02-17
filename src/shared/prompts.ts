@@ -166,7 +166,83 @@ export const BUILT_IN_PACKS: PromptPack[] = [
       'What will you do differently next time?',
     ],
   },
+  {
+    id: 'work-reflection',
+    name: 'Work Reflection',
+    description: 'Structured daily reflections for your work life',
+    icon: '💼',
+    prompts: [
+      'What did you accomplish today?',
+      'What blocked you today?',
+      'Did you help someone get unblocked?',
+      'What drained your energy?',
+      'What meeting was most useful?',
+      'What decision did you make that you feel good about?',
+      'What would you do differently if you could redo today?',
+      'What skill did you use that you want to develop further?',
+      'What feedback did you receive or give?',
+      'What is the most important thing to tackle tomorrow?',
+      'What did you learn from a colleague today?',
+      'What task took longer than expected?',
+      'What are you putting off?',
+      'What small win are you proud of?',
+      'What process or tool frustrated you?',
+      'What collaboration went well today?',
+      'What context switch cost you the most focus?',
+      'What would make tomorrow more productive?',
+      'What conversation stuck with you after work?',
+      'What are you excited to work on next?',
+    ],
+  },
 ];
+
+/** Section hint pools for the structured work reflection template. */
+const WORK_REFLECTION_HINTS = {
+  wins: [
+    'What are you proud of?',
+    'Did you ship something?',
+    'Who did you help?',
+    'What moved the needle?',
+    'What went better than expected?',
+  ],
+  challenges: [
+    'What blocked you?',
+    'What took longer than expected?',
+    'Where did you get stuck?',
+    'What was frustrating?',
+    'What would you do differently?',
+  ],
+  learned: [
+    'What clicked today?',
+    'What did a teammate teach you?',
+    'What surprised you?',
+    'What would you tell past-you?',
+    'What skill did you practice?',
+  ],
+  tomorrow: [
+    'What is your #1 priority?',
+    'What will you do first?',
+    'What can you prepare now?',
+    'Who do you need to talk to?',
+    'What will you say no to?',
+  ],
+};
+
+/** Returns a structured markdown work-reflection template with rotating daily hints. */
+export function getWorkReflectionTemplate(): string {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor(
+    (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+  );
+
+  const winsHint = WORK_REFLECTION_HINTS.wins[dayOfYear % WORK_REFLECTION_HINTS.wins.length]!;
+  const challengesHint = WORK_REFLECTION_HINTS.challenges[dayOfYear % WORK_REFLECTION_HINTS.challenges.length]!;
+  const learnedHint = WORK_REFLECTION_HINTS.learned[dayOfYear % WORK_REFLECTION_HINTS.learned.length]!;
+  const tomorrowHint = WORK_REFLECTION_HINTS.tomorrow[dayOfYear % WORK_REFLECTION_HINTS.tomorrow.length]!;
+
+  return `## ✅ Wins\n${winsHint}\n\n## 🚧 Challenges\n${challengesHint}\n\n## 💡 Learned\n${learnedHint}\n\n## 🎯 Tomorrow\n${tomorrowHint}\n`;
+}
 
 /** Returns the active prompt pack based on localStorage. */
 export function getActivePack(): PromptPack {
