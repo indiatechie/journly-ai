@@ -2,7 +2,7 @@
  * Journal page — warm, inviting daily journal experience.
  */
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useEntry } from '@presentation/hooks/useEntry';
 import { useSettingsStore } from '@application/store/useSettingsStore';
@@ -10,6 +10,7 @@ import { ConfirmDialog } from '@presentation/components/common/ConfirmDialog';
 import { getDailyPrompt, getRandomPrompt, getRandomPromptAcrossAll, getActivePack, setActivePack, BUILT_IN_PACKS } from '@shared/prompts';
 import { useToastStore } from '@application/store/useToastStore';
 import type { EntryId } from '@domain/models/JournalEntry';
+import { computeStreak, computeWeeklyWords, computeTotalStats } from '@shared/stats';
 
 const FIRST_RUN_KEY = 'journly-first-run-complete';
 const PACK_DISCOVERED_KEY = 'journly-pack-discovered';
@@ -87,6 +88,12 @@ export function JournalPage() {
 
   const activeEntries = entries.filter((e) => !e.isDeleted);
 
+  const streak = useMemo(() => computeStreak(activeEntries), [activeEntries]);
+  const weeklyWords = useMemo(() => computeWeeklyWords(activeEntries), [activeEntries]);
+  const totalStats = useMemo(() => computeTotalStats(activeEntries), [activeEntries]);
+  const weekTotal = useMemo(() => weeklyWords.reduce((s, d) => s + d.words, 0), [weeklyWords]);
+  const maxDayWords = useMemo(() => Math.max(...weeklyWords.map((d) => d.words), 1), [weeklyWords]);
+
   // Onboarding — ask what brings them here, pick a pack, start writing
   if (showOnboarding && activeEntries.length === 0) {
     const handlePickPack = (packId: string) => {
@@ -158,6 +165,49 @@ export function JournalPage() {
         <h2 className="text-2xl font-bold text-slate-100">{getGreeting()}</h2>
         <p className="text-sm text-slate-400 mt-0.5">{getFormattedDate()}</p>
       </div>
+
+      {/* Stats banner — only when there are entries */}
+      {activeEntries.length > 0 && (
+        <div className="bg-slate-900/60 rounded-2xl p-4 mb-5">
+          {/* Top row: streak + total entries */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-1.5">
+              <span className="text-base">🔥</span>
+              <span className="text-sm font-semibold text-slate-100">
+                {streak.current}-day streak
+              </span>
+              {streak.todayDone && (
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400 ml-0.5">
+                  <path d="M20 6 9 17l-5-5"/>
+                </svg>
+              )}
+            </div>
+            <span className="text-sm text-slate-400">
+              {totalStats.totalEntries} {totalStats.totalEntries === 1 ? 'entry' : 'entries'}
+            </span>
+          </div>
+
+          {/* Bottom row: 7-day bar chart + weekly words */}
+          <div className="flex items-end gap-1">
+            <div className="flex items-end gap-[3px] flex-1">
+              {weeklyWords.map((d, i) => (
+                <div key={i} className="flex flex-col items-center flex-1 gap-1">
+                  <div
+                    className={`w-full rounded-sm ${d.isToday ? 'bg-primary' : 'bg-primary/40'}`}
+                    style={{ height: `${Math.max((d.words / maxDayWords) * 28, d.words > 0 ? 3 : 1)}px` }}
+                  />
+                  <span className={`text-[10px] ${d.isToday ? 'text-slate-300' : 'text-slate-500'}`}>
+                    {d.day}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <span className="text-xs text-slate-400 ml-2 whitespace-nowrap pb-[2px]">
+              {weekTotal.toLocaleString()} words
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Work Reflection card — shown when work-reflection pack is active */}
       {activePack.id === 'work-reflection' ? (

@@ -11,7 +11,7 @@ import { useEntry } from '@presentation/hooks/useEntry';
 import { useSettingsStore } from '@application/store/useSettingsStore';
 import { anonymize, repersonalize } from '@shared/anonymize';
 import { STORY_THEME_SUGGESTIONS } from '@shared/storyThemes';
-import { MockAIAdapter } from '@infrastructure/ai/MockAIAdapter';
+import { createAIAdapter } from '@infrastructure/ai/createAIAdapter';
 import type { JournalEntry } from '@domain/models/JournalEntry';
 import { formatDate } from '@shared/utils/dateUtils';
 import { ConfirmDialog } from '@presentation/components/common/ConfirmDialog';
@@ -58,6 +58,8 @@ export function StoryPage() {
   const { stories, loadStories, saveStory, deleteStory } = useStory();
   const { entries, loadEntries } = useEntry();
   const isVaultUnlocked = useSettingsStore((s) => s.isVaultUnlocked);
+  const aiConfig = useSettingsStore((s) => s.preferences.ai);
+  const hasAIProvider = aiConfig.provider === 'remote';
 
   const [step, setStep] = useState<FlowStep>('idle');
   const [theme, setTheme] = useState('');
@@ -110,8 +112,9 @@ export function StoryPage() {
   const handleGenerate = useCallback(async () => {
     setStep('generating');
     try {
-      const adapter = new MockAIAdapter();
-      await adapter.initialize({ provider: 'none' });
+      const currentAIConfig = useSettingsStore.getState().preferences.ai;
+      const adapter = createAIAdapter(currentAIConfig);
+      await adapter.initialize(currentAIConfig);
       const response = await adapter.generate({
         systemPrompt: 'You are a reflective narrative writer. Create a thoughtful, first-person story based on the journal entries provided.',
         userPrompt: `${theme}\n\n${anonymizedText}`,
@@ -120,11 +123,11 @@ export function StoryPage() {
       setGeneratedTitle(theme);
       setGeneratedContent(repersonalized);
       setStep('done');
-    } catch {
-      addToast('Story generation failed. Try again.', 'error');
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Story generation failed. Try again.', 'error');
       setStep('preview');
     }
-  }, [theme, anonymizedText, replacements]);
+  }, [theme, anonymizedText, replacements, addToast]);
 
   const handleSave = useCallback(async () => {
     await saveStory({
@@ -132,7 +135,7 @@ export function StoryPage() {
       content: generatedContent,
       sourceEntryIds: matchedEntries.map((e) => e.id),
       prompt: theme,
-      provider: 'local',
+      provider: aiConfig.provider === 'remote' ? 'remote' : 'local',
     });
     addToast('Story saved');
     setStep('idle');
@@ -369,6 +372,21 @@ export function StoryPage() {
     <div className="p-4 max-w-2xl mx-auto pb-24">
       <h2 className="text-2xl font-bold text-slate-100 mb-6">Stories</h2>
 
+      {!hasAIProvider && (
+        <div className="flex items-start gap-2.5 bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5 mb-5">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400 shrink-0 mt-0.5">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 16v-4"/>
+            <path d="M12 8h.01"/>
+          </svg>
+          <p className="text-sm text-slate-400 leading-relaxed">
+            Stories use AI to turn entries into narratives.{' '}
+            <Link to="/settings" className="text-primary hover:underline">Configure an AI provider</Link>{' '}
+            in Settings to get started.
+          </p>
+        </div>
+      )}
+
       {sortedStories.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <span className="text-5xl mb-4">&#x2728;</span>
@@ -381,7 +399,7 @@ export function StoryPage() {
             onClick={() => setStep('theme-input')}
             className="bg-primary hover:bg-primary-hover text-slate-950 rounded-lg px-6 py-2.5 font-medium transition-colors"
           >
-            Create a story
+            {hasAIProvider ? 'Create a story' : 'Try a demo story'}
           </button>
         </div>
       ) : (
@@ -426,7 +444,7 @@ export function StoryPage() {
             onClick={() => setStep('theme-input')}
             className="bg-primary/15 hover:bg-primary/25 text-primary rounded-lg px-5 py-2 text-sm font-medium transition-colors"
           >
-            Create another story
+            {hasAIProvider ? 'Create another story' : 'Try another demo story'}
           </button>
         </>
       )}
