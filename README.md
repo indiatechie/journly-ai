@@ -6,8 +6,12 @@
 
 - **🔒 Privacy-first** — All data encrypted with AES-256-GCM on your device
 - **📴 Offline-first** — Works entirely without internet; no backend required
-- **🤖 Optional AI** — Generate stories from your entries using local (WebLLM) or remote (OpenAI-compatible) AI
+- **🤖 Optional AI** — Generate stories from your entries using remote (OpenAI-compatible) AI
 - **📱 Mobile-first PWA** — Installable on any device, designed for mobile
+- **✍️ Distraction-free editor** — Focus mode, auto-save, mood tracking, daily prompts
+- **🔥 Streaks & stats** — Writing streak tracker with 7-day word count chart
+- **📦 Export/Import** — Encrypted JSON backup and restore
+- **☁️ Google Drive sync** — End-to-end encrypted cloud backup (optional)
 - **🧩 Modular architecture** — Clean domain-driven design with pluggable adapters
 
 ## 🚀 Getting Started
@@ -60,7 +64,7 @@ Presentation → Application → Domain ← Infrastructure
 | `src/presentation/` | React components, pages, hooks, layouts |
 | `src/shared/` | Cross-cutting utilities and constants |
 
-See [`plans/journly-ai-architecture.md`](../plans/journly-ai-architecture.md) for the full architecture document.
+See [`plans/journly-ai-architecture.md`](plans/journly-ai-architecture.md) for the full architecture document.
 
 ## 🔐 Security Model
 
@@ -73,9 +77,9 @@ See [`plans/journly-ai-architecture.md`](../plans/journly-ai-architecture.md) fo
 ## 📋 Implementation Phases
 
 - [x] **Phase 1**: Foundation (scaffold, models, interfaces, app shell)
-- [ ] **Phase 2**: Core storage + crypto
-- [ ] **Phase 3**: Journal CRUD
-- [ ] **Phase 4**: AI integration
+- [x] **Phase 2**: Core storage + crypto (DexieStorageAdapter, CryptoService)
+- [x] **Phase 3**: Journal CRUD (editor, auto-save, vault, prompts, stats)
+- [x] **Phase 4**: AI integration (remote AI story generation, anonymization)
 - [ ] **Phase 5**: Polish + ship
 
 ## 📄 License

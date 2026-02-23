@@ -15,22 +15,22 @@ const FEATURES = [
   {
     title: 'Works Offline',
     description:
-      'No cloud. No sync. No dependency on someone else\'s server staying online. Your data lives on your device, period.',
+      'No dependency on someone else\'s server staying online. Your data lives on your device. Optional encrypted Google Drive backup if you want it.',
   },
   {
-    title: 'Optional Local AI',
+    title: 'Distraction-Free Editor',
     description:
-      'AI runs on-device via WebLLM. No API calls, no data leaving your machine. Or connect your own OpenAI-compatible endpoint.',
+      'Focus mode strips everything away. Just you and the blank page. Auto-saves as you write. Prompts to get you started when you\'re stuck.',
   },
   {
     title: 'Story Builder',
     description:
-      'Converts scattered thoughts into structured narratives. Useful for processing complex decisions, writing memos, or untangling problems.',
+      'Converts scattered thoughts into structured narratives. Connect your own OpenAI-compatible endpoint. Entries are anonymized before leaving your device.',
   },
   {
-    title: 'Voice Capture',
+    title: 'Streaks & Stats',
     description:
-      'Speak your thoughts. Transcription runs locally. Faster than typing when your brain is moving faster than your fingers.',
+      'Track your writing streak and see your 7-day word count. Enough data to stay motivated, not enough to become another dashboard.',
   },
   {
     title: 'Zero Pressure',
