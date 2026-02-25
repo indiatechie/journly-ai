@@ -372,36 +372,60 @@ export function StoryPage() {
     <div className="p-4 max-w-2xl mx-auto pb-24">
       <h2 className="text-2xl font-bold text-slate-100 mb-6">Stories</h2>
 
-      {!hasAIProvider && (
-        <div className="flex items-start gap-2.5 bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5 mb-5">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400 shrink-0 mt-0.5">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M12 16v-4"/>
-            <path d="M12 8h.01"/>
-          </svg>
-          <p className="text-sm text-slate-400 leading-relaxed">
-            Stories use AI to turn entries into narratives.{' '}
-            <Link to="/settings" className="text-primary hover:underline">Configure an AI provider</Link>{' '}
-            in Settings to get started.
-          </p>
-        </div>
-      )}
-
       {sortedStories.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <span className="text-5xl mb-4">&#x2728;</span>
-          <h3 className="text-lg font-semibold text-slate-300 mb-2">No stories yet</h3>
-          <p className="text-slate-400 text-sm max-w-xs mb-6">
-            Turn your journal entries into meaningful narratives. Your data stays
-            private — personal details are anonymized before AI sees anything.
-          </p>
-          <button
-            onClick={() => setStep('theme-input')}
-            className="bg-primary hover:bg-primary-hover text-slate-950 rounded-lg px-6 py-2.5 font-medium transition-colors"
-          >
-            {hasAIProvider ? 'Create a story' : 'Try a demo story'}
-          </button>
-        </div>
+        !hasAIProvider ? (
+          /* Sample story card — sells the feature before setup */
+          <div className="rounded-2xl border border-slate-700/60 overflow-hidden">
+            <div className="bg-slate-900/70 px-5 pt-5 pb-4">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-medium text-primary/80 bg-primary/10 border border-primary/20 rounded-full px-2.5 py-0.5">
+                  ✦ Example
+                </span>
+              </div>
+              <h3 className="text-lg font-semibold text-slate-100 mb-3">A Life in Motion</h3>
+              <p className="text-sm text-slate-400 leading-relaxed line-clamp-5">
+                There are seasons that quietly reshape who we are — and most of the time,
+                we only recognise them looking back. This one started unremarkably: a Tuesday,
+                a restless feeling, a journal entry that trailed off mid-sentence.{'\n\n'}
+                But something was shifting. The weeks that followed were marked by small
+                decisions that somehow added up. A conversation that stayed. A habit quietly
+                dropped. A direction that felt both terrifying and right.{'\n\n'}
+                Reading these entries together, a thread emerges that wasn't visible in the
+                day-to-day: resilience, disguised as ordinary stubbornness. Growth, dressed up
+                as confusion. And beneath it all — an unmistakable sense of someone becoming.
+              </p>
+            </div>
+            <div className="bg-slate-900/40 px-5 py-4 border-t border-slate-800 flex items-center justify-between gap-4">
+              <p className="text-xs text-slate-500">
+                Journly writes stories like this from your own journal entries.
+              </p>
+              <Link
+                to="/settings"
+                className="shrink-0 flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary-hover transition-colors"
+              >
+                Enable
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m9 18 6-6-6-6"/>
+                </svg>
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <span className="text-5xl mb-4">&#x2728;</span>
+            <h3 className="text-lg font-semibold text-slate-300 mb-2">No stories yet</h3>
+            <p className="text-slate-400 text-sm max-w-xs mb-6">
+              Turn your journal entries into meaningful narratives. Your data stays
+              private — personal details are anonymized before AI sees anything.
+            </p>
+            <button
+              onClick={() => setStep('theme-input')}
+              className="bg-primary hover:bg-primary-hover text-slate-950 rounded-lg px-6 py-2.5 font-medium transition-colors"
+            >
+              Create a story
+            </button>
+          </div>
+        )
       ) : (
         <>
           <div className="flex flex-col gap-2.5 mb-6">
@@ -440,12 +464,22 @@ export function StoryPage() {
             ))}
           </div>
 
-          <button
-            onClick={() => setStep('theme-input')}
-            className="bg-primary/15 hover:bg-primary/25 text-primary rounded-lg px-5 py-2 text-sm font-medium transition-colors"
-          >
-            {hasAIProvider ? 'Create another story' : 'Try another demo story'}
-          </button>
+          {hasAIProvider ? (
+            <button
+              onClick={() => setStep('theme-input')}
+              className="bg-primary/15 hover:bg-primary/25 text-primary rounded-lg px-5 py-2 text-sm font-medium transition-colors"
+            >
+              Create another story
+            </button>
+          ) : (
+            <Link
+              to="/settings"
+              className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-primary transition-colors"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
+              Enable AI Stories to create more
+            </Link>
+          )}
         </>
       )}
 
