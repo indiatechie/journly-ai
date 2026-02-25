@@ -53,6 +53,22 @@ export const GoogleAuthService = {
     return online.accessToken.token;
   },
 
+  /**
+   * Return the access token from the persisted capgo session, or null if none.
+   * Synchronous — reads directly from localStorage. No network call.
+   * The token may be expired; callers should handle auth failures gracefully.
+   */
+  getStoredToken(): string | null {
+    try {
+      const raw = localStorage.getItem('capgo_social_login_google_state');
+      if (!raw) return null;
+      const { accessToken } = JSON.parse(raw) as { accessToken?: string };
+      return accessToken || null;
+    } catch {
+      return null;
+    }
+  },
+
   /** Sign out of Google. */
   async signOut(): Promise<void> {
     await SocialLogin.logout({ provider: 'google' });

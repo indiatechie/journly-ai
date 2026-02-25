@@ -14,7 +14,7 @@ export default defineConfig({
     ...(!isCapacitorBuild
       ? [
           VitePWA({
-            registerType: 'autoUpdate',
+            registerType: 'prompt',
             includeAssets: ['favicon.ico', 'icons/*.png'],
             manifest: {
               name: 'Journly.ai',

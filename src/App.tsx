@@ -5,8 +5,9 @@
  * First-time visitors (no vault) see the LandingPage; returning users go to VaultGate.
  */
 
-import { lazy, Suspense, useState, useCallback } from 'react';
+import { lazy, Suspense, useState, useCallback, useEffect } from 'react';
 import { BrowserRouter, HashRouter, Routes, Route } from 'react-router-dom';
+import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Capacitor } from '@capacitor/core';
 import { AppLayout } from '@presentation/layouts/AppLayout';
 import { VaultGate } from '@presentation/components/common/VaultGate';
@@ -41,10 +42,68 @@ function hasExistingVault(): boolean {
   }
 }
 
+/**
+ * Handles the OAuth popup callback: when the capgo social-login plugin opens a
+ * popup that redirects back to this app URL, we detect the #access_token in the
+ * hash, postMessage it back to the opener, and close the popup window.
+ */
+function useOAuthPopupCallback() {
+  useEffect(() => {
+    if (!window.opener) return;
+    const hash = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hash.get('access_token');
+    const idToken = hash.get('id_token');
+    const error = hash.get('error');
+
+    if (error) {
+      window.opener.postMessage(
+        { type: 'oauth-error', error: hash.get('error_description') || error },
+        window.location.origin,
+      );
+      window.close();
+      return;
+    }
+
+    if (accessToken && idToken) {
+      window.opener.postMessage(
+        { type: 'oauth-response', accessToken: { token: accessToken }, idToken },
+        window.location.origin,
+      );
+      window.close();
+    }
+  }, []);
+}
+
+// Detect OAuth callback at module level so we can short-circuit rendering
+const isOAuthPopupCallback =
+  Boolean(window.opener) &&
+  Boolean(new URLSearchParams(window.location.hash.substring(1)).get('access_token') ||
+          new URLSearchParams(window.location.hash.substring(1)).get('error'));
+
+function PWAUpdateBanner() {
+  const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW();
+  if (!needRefresh) return null;
+  return (
+    <div className="fixed top-0 inset-x-0 z-[100] flex items-center justify-between gap-3 px-4 py-3 bg-slate-800 border-b border-slate-700 text-sm text-slate-200 shadow-lg">
+      <span>Journly updated — new features ready.</span>
+      <button
+        onClick={() => updateServiceWorker(true)}
+        className="shrink-0 px-3 py-1.5 bg-primary hover:bg-primary-hover text-slate-950 rounded-lg text-xs font-medium transition-colors"
+      >
+        Reload
+      </button>
+    </div>
+  );
+}
+
 export function App() {
+  useOAuthPopupCallback();
   useThemeEffect();
   const [showSetup, setShowSetup] = useState(false);
   const vaultExists = hasExistingVault();
+
+  // This window is an OAuth popup redirect — render nothing while postMessage fires
+  if (isOAuthPopupCallback) return null;
 
   const handleGetStarted = useCallback(() => {
     setShowSetup(true);
@@ -52,11 +111,18 @@ export function App() {
 
   // No vault and user hasn't clicked "Get Started" yet → show landing page
   if (!vaultExists && !showSetup) {
-    return <LandingPage onGetStarted={handleGetStarted} />;
+    return (
+      <>
+        <PWAUpdateBanner />
+        <LandingPage onGetStarted={handleGetStarted} />
+      </>
+    );
   }
 
   // Either vault exists (show unlock) or user clicked "Get Started" (show setup)
   return (
+    <>
+      <PWAUpdateBanner />
     <Router>
       <VaultGate>
         <Suspense fallback={<PageLoader />}>
@@ -73,5 +139,6 @@ export function App() {
         </Suspense>
       </VaultGate>
     </Router>
+    </>
   );
 }

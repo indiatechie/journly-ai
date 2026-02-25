@@ -22,7 +22,6 @@ const MOOD_OPTIONS: { emoji: string; value: Mood }[] = [
 ];
 
 const AUTOSAVE_DELAY = 1500;
-const MIC_TIP_KEY = 'journly-mic-tip-shown';
 
 export function EntryEditorPage() {
   const navigate = useNavigate();
@@ -62,32 +61,6 @@ export function EntryEditorPage() {
   const [tagInput, setTagInput] = useState('');
   const [showTags, setShowTags] = useState(false);
   const [isLoadingEntry, setIsLoadingEntry] = useState(false);
-
-  // Mic tip nudge — mobile only, once ever, on empty new entries
-  const [showMicTip, setShowMicTip] = useState(false);
-  useEffect(() => {
-    if (isEditMode || content.length > 0) return;
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    if (!isTouchDevice || localStorage.getItem(MIC_TIP_KEY)) return;
-
-    const timer = setTimeout(() => setShowMicTip(true), 3000);
-    return () => clearTimeout(timer);
-  // Only on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Dismiss mic tip when user starts typing
-  useEffect(() => {
-    if (showMicTip && content.length > 0) {
-      setShowMicTip(false);
-      localStorage.setItem(MIC_TIP_KEY, '1');
-    }
-  }, [showMicTip, content]);
-
-  const dismissMicTip = () => {
-    setShowMicTip(false);
-    localStorage.setItem(MIC_TIP_KEY, '1');
-  };
 
   // Auto-save tracking
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -260,19 +233,6 @@ export function EntryEditorPage() {
             className="w-full bg-transparent text-xl text-slate-200 placeholder:text-slate-700 outline-none resize-none leading-loose"
             style={{ minHeight: '200px' }}
           />
-          {showMicTip && (
-            <button
-              onClick={dismissMicTip}
-              className="flex items-center gap-2 mt-6 mx-auto px-4 py-2.5 rounded-full bg-slate-800/80 border border-slate-700/50 animate-fade-in"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
-                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                <line x1="12" x2="12" y1="19" y2="22"/>
-              </svg>
-              <span className="text-xs text-slate-400">Tap the mic on your keyboard to speak instead</span>
-            </button>
-          )}
         </div>
         <div className="sticky bottom-0 px-5 py-4 bg-slate-950/90 backdrop-blur-sm pb-[max(1rem,env(safe-area-inset-bottom))]">
           <div className="max-w-2xl mx-auto flex items-center justify-between gap-2">
@@ -350,20 +310,6 @@ export function EntryEditorPage() {
           className="w-full bg-transparent text-xl text-slate-200 placeholder:text-slate-700 outline-none resize-none leading-loose"
           style={{ minHeight: '200px' }}
         />
-
-        {showMicTip && (
-          <button
-            onClick={dismissMicTip}
-            className="flex items-center gap-2 mt-2 mb-2 px-4 py-2.5 rounded-full bg-slate-800/80 border border-slate-700/50 animate-fade-in"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
-              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-              <line x1="12" x2="12" y1="19" y2="22"/>
-            </svg>
-            <span className="text-xs text-slate-400">Tap the mic on your keyboard to speak instead</span>
-          </button>
-        )}
 
         {/* Word count */}
         <div className="flex justify-end mt-1.5 mb-4">
