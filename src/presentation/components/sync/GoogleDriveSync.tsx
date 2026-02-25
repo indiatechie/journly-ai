@@ -36,11 +36,13 @@ export function GoogleDriveSync() {
   );
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // Restore persisted session on mount so navigating away and back doesn't log out
+  // Restore persisted session on mount so navigating away and back doesn't log out.
+  // tryRestoreSession validates the token against Google — expired tokens are cleared.
   useEffect(() => {
     if (!isConfigured || accessToken) return;
-    const stored = GoogleAuthService.getStoredToken();
-    if (stored) setAccessToken(stored);
+    GoogleAuthService.tryRestoreSession().then((token) => {
+      if (token) setAccessToken(token);
+    });
   // Only on mount
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

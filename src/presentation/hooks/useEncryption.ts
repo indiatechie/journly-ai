@@ -113,8 +113,41 @@ export function useEncryption() {
       if (!isValid) return false;
 
       const key = await cryptoService.deriveKey(passphrase, salt, iterations);
+
+      // Decrypt the AI API key from the vault, or migrate a legacy plaintext key.
+      let aiConfig = prefs.ai;
+      if (prefs.ai.remoteApiKeyCiphertext && prefs.ai.remoteApiKeyIv) {
+        try {
+          const apiKey = await cryptoService.decrypt<string>(
+            prefs.ai.remoteApiKeyCiphertext,
+            prefs.ai.remoteApiKeyIv,
+            key,
+          );
+          aiConfig = { ...prefs.ai, remoteApiKey: apiKey };
+        } catch {
+          // Decryption failed — treat as unconfigured
+          aiConfig = { ...prefs.ai, remoteApiKey: undefined };
+        }
+      } else if (prefs.ai.remoteApiKey) {
+        // Migration: plaintext key found — encrypt it and save back
+        try {
+          const encrypted = await cryptoService.encrypt(prefs.ai.remoteApiKey, key);
+          savePreferences({
+            ...prefs,
+            ai: {
+              ...prefs.ai,
+              remoteApiKey: undefined,
+              remoteApiKeyCiphertext: encrypted.ciphertextBase64,
+              remoteApiKeyIv: encrypted.ivBase64,
+            },
+          });
+        } catch {
+          // Migration failed silently — plaintext key used for this session only
+        }
+      }
+
       const store = useSettingsStore.getState();
-      store.setPreferences(prefs);
+      store.setPreferences({ ...prefs, ai: aiConfig });
       store.unlockVault(key);
       store.setFirstLaunch(false);
 

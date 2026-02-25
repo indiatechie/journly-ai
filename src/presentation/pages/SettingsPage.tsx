@@ -12,6 +12,7 @@ import { FileIOService } from '@infrastructure/fileio/FileIOService';
 import { ConfirmDialog } from '@presentation/components/common/ConfirmDialog';
 import { GoogleDriveSync } from '@presentation/components/sync/GoogleDriveSync';
 import { createAIAdapter } from '@infrastructure/ai/createAIAdapter';
+import { cryptoService } from '@infrastructure/crypto';
 import type { Theme, AIConfig } from '@domain/models/UserPreferences';
 
 const THEMES: { label: string; value: Theme }[] = [
@@ -69,6 +70,7 @@ export function SettingsPage() {
 
   const aiConfig = useSettingsStore((s) => s.preferences.ai);
   const setAIConfig = useSettingsStore((s) => s.setAIConfig);
+  const cryptoKey = useSettingsStore((s) => s.cryptoKey);
 
   const [aiMode, setAiMode] = useState<AIMode>(() => getInitialMode(aiConfig));
   const [modelQuality, setModelQuality] = useState<ModelQuality>(() => getInitialQuality(aiConfig));
@@ -84,17 +86,30 @@ export function SettingsPage() {
   const aiStatusText = getStatusText(aiConfig);
 
   const persistAIConfig = (config: AIConfig) => {
+    // Update in-memory state immediately (synchronous — no await needed for UI)
     setAIConfig(config);
-    try {
-      const raw = localStorage.getItem(PREFERENCES_STORAGE_KEY);
-      if (raw) {
+
+    // Persist to localStorage asynchronously with the API key encrypted
+    (async () => {
+      try {
+        const raw = localStorage.getItem(PREFERENCES_STORAGE_KEY);
+        if (!raw) return;
         const prefs = JSON.parse(raw);
-        prefs.ai = config;
+
+        // Strip the plaintext key and replace with AES-GCM ciphertext
+        const { remoteApiKey, ...storedAi } = config;
+        if (remoteApiKey && cryptoKey) {
+          const encrypted = await cryptoService.encrypt(remoteApiKey, cryptoKey);
+          storedAi.remoteApiKeyCiphertext = encrypted.ciphertextBase64;
+          storedAi.remoteApiKeyIv = encrypted.ivBase64;
+        }
+
+        prefs.ai = storedAi;
         localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(prefs));
+      } catch {
+        // Non-critical
       }
-    } catch {
-      // Non-critical
-    }
+    })();
   };
 
   const handleAIModeChange = (mode: AIMode) => {

@@ -56,7 +56,7 @@ export const GoogleAuthService = {
   /**
    * Return the access token from the persisted capgo session, or null if none.
    * Synchronous — reads directly from localStorage. No network call.
-   * The token may be expired; callers should handle auth failures gracefully.
+   * The token may be expired; callers should use tryRestoreSession() instead.
    */
   getStoredToken(): string | null {
     try {
@@ -64,6 +64,23 @@ export const GoogleAuthService = {
       if (!raw) return null;
       const { accessToken } = JSON.parse(raw) as { accessToken?: string };
       return accessToken || null;
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Try to restore a valid session from the persisted capgo state.
+   * Validates the stored token against Google's tokeninfo endpoint.
+   * Returns the access token if the session is still alive, otherwise null.
+   */
+  async tryRestoreSession(): Promise<string | null> {
+    if (!CLIENT_ID) return null;
+    try {
+      await this.initialize();
+      const { isLoggedIn } = await SocialLogin.isLoggedIn({ provider: 'google' });
+      if (!isLoggedIn) return null;
+      return this.getStoredToken();
     } catch {
       return null;
     }

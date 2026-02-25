@@ -28,10 +28,18 @@ export type AIProviderType = 'none' | 'local' | 'remote';
 
 export interface AIConfig {
   provider: AIProviderType;
-  remoteEndpoint?: string; // User-provided URL
-  remoteApiKey?: string; // Stored encrypted in IDB
+  remoteEndpoint?: string;
+  /**
+   * Plaintext API key — in-memory only, never written to localStorage.
+   * Populated by decrypting remoteApiKeyCiphertext on vault unlock.
+   */
+  remoteApiKey?: string;
+  /** AES-GCM ciphertext of the API key, base64-encoded. Persisted to localStorage. */
+  remoteApiKeyCiphertext?: string;
+  /** AES-GCM IV paired with remoteApiKeyCiphertext, base64-encoded. */
+  remoteApiKeyIv?: string;
   remoteModel?: string;
-  localModelId?: string; // e.g. 'Llama-3.2-1B-Instruct-q4f16_1-MLC'
+  localModelId?: string;
 }
 
 /** Default preferences for a fresh installation */
