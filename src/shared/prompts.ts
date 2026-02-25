@@ -228,20 +228,18 @@ const WORK_REFLECTION_HINTS = {
   ],
 };
 
-/** Returns a structured markdown work-reflection template with rotating daily hints. */
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]!;
+}
+
+/** Returns a structured markdown work-reflection template with randomly picked hints per section. */
 export function getWorkReflectionTemplate(): string {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 0);
-  const dayOfYear = Math.floor(
-    (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
-  );
-
-  const winsHint = WORK_REFLECTION_HINTS.wins[dayOfYear % WORK_REFLECTION_HINTS.wins.length]!;
-  const challengesHint = WORK_REFLECTION_HINTS.challenges[dayOfYear % WORK_REFLECTION_HINTS.challenges.length]!;
-  const learnedHint = WORK_REFLECTION_HINTS.learned[dayOfYear % WORK_REFLECTION_HINTS.learned.length]!;
-  const tomorrowHint = WORK_REFLECTION_HINTS.tomorrow[dayOfYear % WORK_REFLECTION_HINTS.tomorrow.length]!;
-
-  return `## ✅ Wins\n${winsHint}\n\n## 🚧 Challenges\n${challengesHint}\n\n## 💡 Learned\n${learnedHint}\n\n## 🎯 Tomorrow\n${tomorrowHint}\n`;
+  return [
+    `## ✅ Wins\n${pickRandom(WORK_REFLECTION_HINTS.wins)}`,
+    `## 🚧 Challenges\n${pickRandom(WORK_REFLECTION_HINTS.challenges)}`,
+    `## 💡 Learned\n${pickRandom(WORK_REFLECTION_HINTS.learned)}`,
+    `## 🎯 Tomorrow\n${pickRandom(WORK_REFLECTION_HINTS.tomorrow)}`,
+  ].join('\n\n') + '\n';
 }
 
 /** Returns the active prompt pack based on localStorage. */
