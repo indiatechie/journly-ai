@@ -21,23 +21,31 @@ const THEMES: { label: string; value: Theme }[] = [
 ];
 
 // UI-level concept — maps to provider: 'remote' under the hood
-type AIMode = 'off' | 'openai' | 'custom';
+type AIMode = 'off' | 'openai' | 'gemini' | 'custom';
 type ModelQuality = 'fast' | 'smart';
 
 const OPENAI_ENDPOINT = 'https://api.openai.com/v1';
-const MODEL_MAP: Record<ModelQuality, string> = {
+const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/openai';
+
+const OPENAI_MODELS: Record<ModelQuality, string> = {
   fast: 'gpt-4o-mini',
   smart: 'gpt-4o',
+};
+const GEMINI_MODELS: Record<ModelQuality, string> = {
+  fast: 'gemini-2.0-flash',
+  smart: 'gemini-1.5-pro',
 };
 
 function getInitialMode(config: AIConfig): AIMode {
   if (config.provider === 'none') return 'off';
   if (!config.remoteEndpoint || config.remoteEndpoint.includes('openai.com')) return 'openai';
+  if (config.remoteEndpoint.includes('googleapis.com')) return 'gemini';
   return 'custom';
 }
 
 function getInitialQuality(config: AIConfig): ModelQuality {
-  return config.remoteModel === 'gpt-4o' ? 'smart' : 'fast';
+  if (config.remoteModel === 'gpt-4o' || config.remoteModel === 'gemini-1.5-pro') return 'smart';
+  return 'fast';
 }
 
 function getStatusText(config: AIConfig): string | null {
@@ -45,6 +53,10 @@ function getStatusText(config: AIConfig): string | null {
   if (!config.remoteEndpoint || config.remoteEndpoint.includes('openai.com')) {
     const quality = config.remoteModel === 'gpt-4o' ? 'Smart model' : 'Fast model';
     return `AI stories on · OpenAI · ${quality}`;
+  }
+  if (config.remoteEndpoint.includes('googleapis.com')) {
+    const quality = config.remoteModel === 'gemini-1.5-pro' ? 'Smart model' : 'Fast model';
+    return `AI stories on · Gemini · ${quality}`;
   }
   return 'AI stories on · Custom endpoint';
 }
@@ -87,6 +99,7 @@ export function SettingsPage() {
 
   const handleAIModeChange = (mode: AIMode) => {
     setAiMode(mode);
+    setModelQuality('fast');
     if (mode === 'off') {
       persistAIConfig({ provider: 'none' });
       setAiKey('');
@@ -104,9 +117,23 @@ export function SettingsPage() {
       provider: 'remote',
       remoteEndpoint: OPENAI_ENDPOINT,
       remoteApiKey: aiKey.trim(),
-      remoteModel: MODEL_MAP[modelQuality],
+      remoteModel: OPENAI_MODELS[modelQuality],
     });
     addToast('AI stories enabled', 'success', `Using OpenAI · ${modelQuality === 'fast' ? 'Fast model' : 'Smart model'}`);
+  };
+
+  const handleSaveGemini = () => {
+    if (!aiKey.trim()) {
+      addToast('Gemini API key is required.', 'error');
+      return;
+    }
+    persistAIConfig({
+      provider: 'remote',
+      remoteEndpoint: GEMINI_ENDPOINT,
+      remoteApiKey: aiKey.trim(),
+      remoteModel: GEMINI_MODELS[modelQuality],
+    });
+    addToast('AI stories enabled', 'success', `Using Gemini · ${modelQuality === 'fast' ? 'Fast model' : 'Smart model'}`);
   };
 
   const handleSaveCustom = () => {
@@ -124,8 +151,14 @@ export function SettingsPage() {
   };
 
   const handleTestConnection = async () => {
-    const endpoint = aiMode === 'openai' ? OPENAI_ENDPOINT : aiEndpoint;
-    const model = aiMode === 'openai' ? MODEL_MAP[modelQuality] : (aiModel || undefined);
+    const endpoint =
+      aiMode === 'openai' ? OPENAI_ENDPOINT :
+      aiMode === 'gemini' ? GEMINI_ENDPOINT :
+      aiEndpoint;
+    const model =
+      aiMode === 'openai' ? OPENAI_MODELS[modelQuality] :
+      aiMode === 'gemini' ? GEMINI_MODELS[modelQuality] :
+      (aiModel || undefined);
     if (!endpoint || !aiKey.trim()) {
       addToast('API key is required.', 'error');
       return;
@@ -267,6 +300,7 @@ export function SettingsPage() {
             {([
               { value: 'off', label: 'Off' },
               { value: 'openai', label: 'OpenAI' },
+              { value: 'gemini', label: 'Gemini' },
               { value: 'custom', label: 'Custom' },
             ] as const).map(({ value, label }) => (
               <button
@@ -366,6 +400,97 @@ export function SettingsPage() {
               <div className="flex items-center gap-4">
                 <button
                   onClick={handleSaveOpenAI}
+                  className="px-5 py-2.5 bg-primary hover:bg-primary-hover text-slate-950 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => void handleTestConnection()}
+                  disabled={isTesting}
+                  className="text-xs text-slate-500 hover:text-slate-300 transition-colors disabled:opacity-40"
+                >
+                  {isTesting ? 'Testing...' : 'Test connection'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Gemini */}
+          {aiMode === 'gemini' && (
+            <div className="space-y-5">
+              {/* API Key */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                  Gemini API Key
+                </label>
+                <div className="relative">
+                  <input
+                    type={showKey ? 'text' : 'password'}
+                    value={aiKey}
+                    onChange={(e) => setAiKey(e.target.value)}
+                    placeholder="AIza..."
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 pr-16 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-primary/50 transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowKey((v) => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-200 transition-colors px-1.5 py-0.5"
+                  >
+                    {showKey ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+                <a
+                  href="https://aistudio.google.com/app/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary mt-1.5 transition-colors"
+                >
+                  Get your free key at aistudio.google.com
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                  </svg>
+                </a>
+              </div>
+
+              {/* Model quality */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Model quality
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setModelQuality('fast')}
+                    className={`py-3 px-4 rounded-xl text-sm font-medium transition-all border text-left ${
+                      modelQuality === 'fast'
+                        ? 'bg-primary/10 border-primary/40 text-primary'
+                        : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700/60'
+                    }`}
+                  >
+                    <div className="font-semibold mb-0.5">Fast</div>
+                    <div className={`text-xs ${modelQuality === 'fast' ? 'text-primary/70' : 'text-slate-500'}`}>
+                      gemini-2.0-flash · Free tier
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setModelQuality('smart')}
+                    className={`py-3 px-4 rounded-xl text-sm font-medium transition-all border text-left ${
+                      modelQuality === 'smart'
+                        ? 'bg-primary/10 border-primary/40 text-primary'
+                        : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700/60'
+                    }`}
+                  >
+                    <div className="font-semibold mb-0.5">Smart</div>
+                    <div className={`text-xs ${modelQuality === 'smart' ? 'text-primary/70' : 'text-slate-500'}`}>
+                      gemini-1.5-pro · More creative
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handleSaveGemini}
                   className="px-5 py-2.5 bg-primary hover:bg-primary-hover text-slate-950 rounded-lg text-sm font-medium transition-colors"
                 >
                   Save
