@@ -25,7 +25,12 @@ const FEATURES = [
   {
     title: 'Story Builder',
     description:
-      'Converts scattered thoughts into structured narratives. Connect your own OpenAI-compatible endpoint. Entries are anonymized before leaving your device.',
+      'Converts scattered thoughts into structured narratives. Connect your own Gemini or OpenAI-compatible endpoint. Entries are anonymized before leaving your device.',
+  },
+  {
+    title: 'Data Ownership',
+    description:
+      'Export all your entries as an encrypted JSON backup at any time. Restore from that backup on any device — no vendor lock-in, no proprietary formats.',
   },
   {
     title: 'Streaks & Stats',

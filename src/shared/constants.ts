@@ -4,7 +4,7 @@
 
 /** Application metadata */
 export const APP_NAME = 'Journly.ai';
-export const APP_VERSION = '0.1.0';
+export const APP_VERSION = '1.0.0';
 
 /** Crypto defaults */
 export const PBKDF2_ITERATIONS = 600_000;
