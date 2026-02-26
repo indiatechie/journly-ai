@@ -56,12 +56,24 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
         <p className="mt-6 text-lg sm:text-xl text-slate-400 max-w-2xl leading-relaxed">
           Write freely. Reflect deeply. Everything stays private and encrypted on your device.
         </p>
-        <button
-          onClick={onGetStarted}
-          className="mt-10 bg-primary hover:bg-primary-hover text-slate-950 rounded-lg px-8 py-4 text-lg font-medium transition-colors"
-        >
-          Get Started
-        </button>
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+          <button
+            onClick={onGetStarted}
+            className="bg-primary hover:bg-primary-hover text-slate-950 rounded-lg px-8 py-4 text-lg font-medium transition-colors"
+          >
+            Get Started
+          </button>
+          <a
+            href="./downloads/journly-ai.apk"
+            download="journly-ai.apk"
+            className="flex items-center gap-2 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-slate-100 rounded-lg px-6 py-4 text-lg font-medium transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.523 0.976 15.679 4.27A7.933 7.933 0 0 0 12 3.5a7.933 7.933 0 0 0-3.679.77L6.477.976 5.046 1.774l1.807 3.13A7.992 7.992 0 0 0 4 11.5h16a7.992 7.992 0 0 0-2.853-6.596L18.954 1.774 17.523.976zM8.5 8.5a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2zM4 13.5v6a1.5 1.5 0 0 0 3 0v-6H4zm13 0v6a1.5 1.5 0 0 0 3 0v-6h-3zm-9 0v8.5a1.5 1.5 0 0 0 3 0V13.5H8zm4 0v8.5a1.5 1.5 0 0 0 3 0V13.5h-3z"/>
+            </svg>
+            Download APK
+          </a>
+        </div>
         <p className="mt-4 text-slate-400 text-sm">
           Free. Offline. No account required.
         </p>
@@ -147,12 +159,24 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
         <p className="text-slate-400 mb-8">
           Set up your encrypted vault in under 30 seconds.
         </p>
-        <button
-          onClick={onGetStarted}
-          className="bg-primary hover:bg-primary-hover text-slate-950 rounded-lg px-8 py-4 text-lg font-medium transition-colors"
-        >
-          Get Started
-        </button>
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <button
+            onClick={onGetStarted}
+            className="bg-primary hover:bg-primary-hover text-slate-950 rounded-lg px-8 py-4 text-lg font-medium transition-colors"
+          >
+            Get Started
+          </button>
+          <a
+            href="./downloads/journly-ai.apk"
+            download="journly-ai.apk"
+            className="flex items-center gap-2 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-slate-100 rounded-lg px-6 py-4 text-lg font-medium transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.523 0.976 15.679 4.27A7.933 7.933 0 0 0 12 3.5a7.933 7.933 0 0 0-3.679.77L6.477.976 5.046 1.774l1.807 3.13A7.992 7.992 0 0 0 4 11.5h16a7.992 7.992 0 0 0-2.853-6.596L18.954 1.774 17.523.976zM8.5 8.5a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2zM4 13.5v6a1.5 1.5 0 0 0 3 0v-6H4zm13 0v6a1.5 1.5 0 0 0 3 0v-6h-3zm-9 0v8.5a1.5 1.5 0 0 0 3 0V13.5H8zm4 0v8.5a1.5 1.5 0 0 0 3 0V13.5h-3z"/>
+            </svg>
+            Download APK
+          </a>
+        </div>
       </section>
     </div>
   );
