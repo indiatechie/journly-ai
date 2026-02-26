@@ -284,7 +284,7 @@ export function SettingsPage() {
           <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
             Appearance
           </h3>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {THEMES.map(({ label, value }) => (
               <button
                 key={value}
@@ -311,7 +311,7 @@ export function SettingsPage() {
           </p>
 
           {/* Mode tabs */}
-          <div className="flex gap-2 mb-5">
+          <div className="flex flex-wrap gap-2 mb-5">
             {([
               { value: 'off', label: 'Off' },
               { value: 'openai', label: 'OpenAI' },
