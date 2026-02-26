@@ -6,11 +6,29 @@ import { resolve } from 'path';
 
 const isCapacitorBuild = !!process.env.CAPACITOR_BUILD;
 
+// When building for Capacitor, VitePWA is excluded but App.tsx still imports
+// the virtual:pwa-register/react module. This stub replaces it with a no-op
+// so the build succeeds and PWAUpdateBanner silently does nothing on native.
+const pwaStubPlugin = {
+  name: 'pwa-register-stub',
+  resolveId(id: string) {
+    if (id === 'virtual:pwa-register/react') return id;
+  },
+  load(id: string) {
+    if (id === 'virtual:pwa-register/react') {
+      return `export function useRegisterSW() {
+        return { needRefresh: [false, () => {}], offlineReady: [false, () => {}], updateServiceWorker: async () => {} };
+      }`;
+    }
+  },
+};
+
 export default defineConfig({
   base: './',
   plugins: [
     react(),
     tailwindcss(),
+    ...(isCapacitorBuild ? [pwaStubPlugin] : []),
     ...(!isCapacitorBuild
       ? [
           VitePWA({
